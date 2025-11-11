@@ -1,4 +1,7 @@
-img {
-    background: none;
-    background-color: transparent;
+body{
+    background-color: rgb(158, 156, 156);
+}
+
+fieldset{
+    background-color: rgb(213, 210, 210);
 }

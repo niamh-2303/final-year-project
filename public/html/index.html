@@ -7,8 +7,30 @@
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <h1>Welcome!</h1>
-<img src="/images/logo_text_transparent.png" alt="DFIR Case Management Logo" style="width:100px; height:auto;">
+    <form onsubmit="event.preventDefault(); login();">
+        <fieldset>
+                    
+            <h1 class="h3 mb-3 fw-normal">Welcome!</h1>
+            <img src="../images/logo_text_transparent.png" alt="DFIR logo with app name" width="100" height="100">
+            <h3 class="h3 mb-3 fw-normal">Please Sign In</h3>     
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email address</label>
+                    <input type="email" class="form-control" id="email" placeholder="name@example.com" aria-label="Email address">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="pwd" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="pwd" placeholder="Password" aria-label="Password">
+                </div>     
+                
+                <button class="btn btn-primary w-100 py-2" type="submit">Sign in</button>
 
+                    <div class="container toregister">
+                        <p>Don't Have an Account? <a href="/Register">Register</a></p>
+                    </div>
+                    
+            
+        </fieldset>
+    </form>
 </body>
 </html>
