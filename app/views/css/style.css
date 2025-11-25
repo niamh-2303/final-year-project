@@ -86,6 +86,7 @@ hr {
 .form-container {
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 /* Paragraph links below forms */
@@ -105,4 +106,59 @@ form p a {
 form p a:hover {
     text-decoration: underline;
     color: #0b6fa8; /* darker on hover */
+}
+
+/* Container for first and last name on same row */
+.name-row {
+    display: flex;
+    gap: 50px;           /* space between fields */
+    justify-content: space-between;
+}
+
+/* Make each field take 50% width */
+.name-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.exit-cross {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+
+    width: 50px;         
+    height: 50px;         
+    font-size: 50px;      
+    color: #e70000;
+    text-decoration: none;
+    font-weight: bold;
+    text-align: center;
+    line-height: 50px;    
+
+    border: 2px solid #e70000;
+    border-radius: 4px;   
+    transition: all 0.2s ease;
+}
+
+.exit-cross:hover {
+    color: #fc0303;
+}
+
+.select-wrapper select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #777;
+    background: rgba(255, 255, 255, 0.1);
+    color: #eee;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+}
+
+/* Options background when dropdown opens */
+.select-wrapper select option {
+    background-color: #1C2833;
+    color: #eee;
 }
