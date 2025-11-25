@@ -1,16 +1,11 @@
-/* Global page background — sleek, muted, forensic UI tone */
 body {
-    background: linear-gradient(135deg, #1C2833);
+    background: #1C2833; 
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
     margin: 0;
+    padding: 0;
     color: #e6e6e6;
 }
 
-/* Form container styled as a forensic “panel” */
 form fieldset {
     background: rgba(#1C2833);
     backdrop-filter: blur(8px);
@@ -21,23 +16,21 @@ form fieldset {
     box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
 }
 
-/* Make the logo blend with background */
+/* Make the logo blend with background ---> not working */
 img {
     display: block;
     margin: 0 auto 20px auto;
-    opacity: 0.8;                     /* Softens the edges */
+    opacity: 0.8;                     
     filter: drop-shadow(0 0 4px #0002); 
-    mix-blend-mode: lighten;          /* Allows blending with background */
+    mix-blend-mode: lighten;          
 }
 
-/* Header text */
 h1 {
     text-align: center;
     margin: 10px 0 20px 0;
     letter-spacing: 1px;
 }
 
-/* Paragraph text */
 p {
     text-align: center;
     margin-bottom: 20px;
@@ -75,7 +68,6 @@ button.btn-primary:hover {
     background: #0b6fa8;
 }
 
-/* Horizontal line styling */
 hr {
     border: 0;
     border-top: 1px solid rgba(255, 255, 255, 0.2);
@@ -94,11 +86,11 @@ form p {
     text-align: center;
     margin-top: 15px;
     font-size: 14px;
-    color: #ccc; /* subtle color for text */
+    color: #ccc; 
 }
 
 form p a {
-    color: #0e86d4; /* blue like buttons */
+    color: #0e86d4; 
     text-decoration: none;
     font-weight: bold;
 }
@@ -111,11 +103,10 @@ form p a:hover {
 /* Container for first and last name on same row */
 .name-row {
     display: flex;
-    gap: 50px;           /* space between fields */
+    gap: 50px;           
     justify-content: space-between;
 }
 
-/* Make each field take 50% width */
 .name-field {
     flex: 1;
     display: flex;
@@ -157,8 +148,138 @@ form p a:hover {
     cursor: pointer;
 }
 
-/* Options background when dropdown opens */
 .select-wrapper select option {
     background-color: #1C2833;
     color: #eee;
+}
+
+/* TOP NAVBAR */
+.top-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 110px;
+    background-color: #2C3E50;
+    border-bottom: 2px solid #395066;
+    display: flex;
+    align-items: center;
+    padding-left: 20px;
+    z-index: 1000;
+}
+
+/* LOGO + TEXT WRAPPER */
+.nav-brand {
+    display: flex;
+    align-items: center;
+}
+
+.nav-brand img {
+    margin-right: 15px;
+}
+
+.nav-brand span {
+    font-size: 32px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.page-layout {
+    display: flex; 
+}
+
+/* LEFT SIDEBAR */
+.side-nav {
+    width: 220px;
+    background-color: #2C3E50;
+    color: white;
+    height: calc(100vh - 110px);
+    position: fixed;
+    top: 110px; /* start below the navbar */
+    left: 0;
+    padding-top: 20px;
+}
+
+.side-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.side-nav ul li {
+    padding: 12px 20px;
+}
+
+.side-nav a {
+    color: white;
+    text-decoration: none;
+    display: block;
+}
+
+.side-nav a:hover {
+    background-color: #333;
+}
+
+.main-content {
+    margin-left: 200px;
+    margin-top: 55px;      
+    padding: 40px 40px;
+    text-align: left;
+    display: block;
+}
+
+.main-content h1 {
+    margin: 0;
+    padding: 10px 0 0 0;
+    text-align: left;
+    font-size: 60px;  
+}
+
+.no-cases-message {
+    margin-left: 300px;
+    margin-top: 80px;
+    font-size: 28px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.case-tabs {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+    margin-bottom: 25px;
+}
+
+.tab {
+    background: none;
+    border: none;
+    font-size: 18px;
+    padding: 5px 0;
+    cursor: pointer;
+    color: #777;
+}
+
+.tab.active {
+    font-weight: bold;
+    color: black;
+    border-bottom: 2px solid #000;
+}
+
+.tab:hover {
+    color: #444;
+}
+
+.tab-content {
+    display: block;
+}
+
+.hidden {
+    display: none;
+}
+
+.no-cases-message {
+    margin-top: 60px;
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
 }

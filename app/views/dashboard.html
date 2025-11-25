@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFIR Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- TOP NAVBAR -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <img src="images/logo_transparent.png" alt="Logo" width="120" height="120">
+            <span>DFIR Case Management</span>
+        </div>
+    </nav>
+
+    <div class="page-layout">
+
+        <!-- LEFT SIDEBAR -->
+        <nav class="side-nav">
+            <ul>
+                <li><a href="#">Archive</a></li>
+                <li><a href="#">Settings</a></li>
+            </ul>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <h1>My Cases</h1>
+
+            <div class="case-tabs">
+                <button class="tab active" onclick="switchTab(event, 'active')">Active</button>
+                <button class="tab" onclick="switchTab(event, 'all')">All</button>
+                <button class="tab" onclick="switchTab(event, 'requests')">Requests</button>
+            </div>
+
+            <div id="active" class="tab-content">
+                <h2>My Active Cases</h2>
+                <p class="no-cases-message">You currently have no cases</p>
+            </div>
+
+            <div id="all" class="tab-content hidden">
+                <h2>All Cases</h2>
+            </div>
+
+            <div id="requests" class="tab-content hidden">
+                <h2>Case Requests</h2>
+            </div>
+
+
+        </main>
+
+    </div>
+
+    <script>
+    function switchTab(event, tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+
+        event.target.classList.add('active');
+        document.getElementById(tabName).classList.remove('hidden');
+    }
+    </script>
+    
+</body>
+</html>
