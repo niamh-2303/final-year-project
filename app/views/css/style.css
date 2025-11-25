@@ -1,0 +1,108 @@
+/* Global page background — sleek, muted, forensic UI tone */
+body {
+    background: linear-gradient(135deg, #1C2833);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    color: #e6e6e6;
+}
+
+/* Form container styled as a forensic “panel” */
+form fieldset {
+    background: rgba(#1C2833);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 40px 50px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    width: 400px;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Make the logo blend with background */
+img {
+    display: block;
+    margin: 0 auto 20px auto;
+    opacity: 0.8;                     /* Softens the edges */
+    filter: drop-shadow(0 0 4px #0002); 
+    mix-blend-mode: lighten;          /* Allows blending with background */
+}
+
+/* Header text */
+h1 {
+    text-align: center;
+    margin: 10px 0 20px 0;
+    letter-spacing: 1px;
+}
+
+/* Paragraph text */
+p {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Input fields */
+input[type=text],
+input[type=email],
+input[type=password] {
+    width: 100%;
+    padding: 10px 12px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border: 1px solid #777;
+    background: rgba(255, 255, 255, 0.1);
+    color: #eee;
+    font-size: 14px;
+}
+
+/* Buttons */
+button.btn-primary {
+    background: #0e86d4;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 15px;
+    cursor: pointer;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 100%;
+}
+
+button.btn-primary:hover {
+    background: #0b6fa8;
+}
+
+/* Horizontal line styling */
+hr {
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin: 10px 0;
+}
+
+/* Form container spacing */
+.form-container {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Paragraph links below forms */
+form p {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 14px;
+    color: #ccc; /* subtle color for text */
+}
+
+form p a {
+    color: #0e86d4; /* blue like buttons */
+    text-decoration: none;
+    font-weight: bold;
+}
+
+form p a:hover {
+    text-decoration: underline;
+    color: #0b6fa8; /* darker on hover */
+}
