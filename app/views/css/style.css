@@ -6,6 +6,14 @@ body {
     color: #e6e6e6;
 }
 
+body > form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+
 form fieldset {
     background: rgba(#1C2833);
     backdrop-filter: blur(8px);
@@ -14,6 +22,7 @@ form fieldset {
     border: 1px solid rgba(255, 255, 255, 0.15);
     width: 400px;
     box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+    text-align: center;
 }
 
 /* Make the logo blend with background ---> not working */
