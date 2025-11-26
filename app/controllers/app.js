@@ -38,6 +38,10 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../views/dashboard.html'));
 });
 
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/create-case.html'));
+});
+
 // Start server
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
