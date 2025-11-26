@@ -265,17 +265,17 @@ form p a:hover {
     font-size: 18px;
     padding: 5px 0;
     cursor: pointer;
-    color: #777;
+    color: #f1f3f6;
 }
 
 .tab.active {
     font-weight: bold;
-    color: black;
-    border-bottom: 2px solid #000;
+    color: rgb(230, 230, 14);
+    border-bottom: 2px solid rgb(230, 230, 14);
 }
 
 .tab:hover {
-    color: #444;
+    color: #cec2c2;
 }
 
 .tab-content {
