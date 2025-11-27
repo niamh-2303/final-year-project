@@ -55,7 +55,7 @@ input[type=password] {
     border-radius: 6px;
     border: 1px solid #777;
     background: rgba(255, 255, 255, 0.1);
-    color: #eee;
+    color: #0a0a0a;
     font-size: 14px;
 }
 
@@ -162,7 +162,7 @@ form p a:hover {
     color: #eee;
 }
 
-/* TOP NAVBAR */
+/*top navbar */
 .top-nav {
     position: fixed;
     top: 0;
@@ -173,8 +173,31 @@ form p a:hover {
     border-bottom: 2px solid #D9D9D9;
     display: flex;
     align-items: center;
+    justify-content: space-between;  /* Make sure this is here */
     padding-left: 20px;
+    padding-right: 20px;
     z-index: 1000;
+}
+
+.btn-logout {
+    background: #e74c3c;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    margin-right: 60px;   /* Add this line - adjust value as needed */
+}
+
+.btn-logout:hover {
+    background: #c0392b;              
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* LOGO + TEXT WRAPPER */

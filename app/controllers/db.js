@@ -1,12 +1,10 @@
-const { Pool } = require('pg');
-require('dotenv').config();
+const postgres = require('postgres');
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
+const sql = postgres({
+    host: "localhost",
+    user: "postgres",
+    database: "final_year_project",  // ← Change this to your DFIR database name
+    password: "postgres"      // ← Add your postgres password
+}) 
 
-module.exports = pool;
+module.exports = sql;
