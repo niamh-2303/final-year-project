@@ -24,21 +24,29 @@ async function registerAccount() {
             headers: {
                 'Content-Type': 'application/json'
             },
-           body: JSON.stringify({
-            fname: fname,
-            lname: lname,
-            role: role,
-            email: email,
-            psw: psw,
-            pswrepeat: pswRepeat  
-           })
+            body: JSON.stringify({
+                fname: fname,
+                lname: lname,
+                role: role,
+                email: email,
+                psw: psw,
+                'psw-repeat': pswRepeat
+            })
         });
 
         const data = await response.json();
 
         if (response.ok) {
             alert('Account registered successfully!');
-            window.location.href = 'index.html'; // Redirect to login page
+            
+            // Redirect based on role
+            if (data.role === 'client') {
+                window.location.href = 'client-dashboard.html';
+            } else if (data.role === 'investigator') {
+                window.location.href = 'dashboard.html';
+            } else {
+                window.location.href = 'dashboard.html'; // Default
+            }
         } else {
             alert(data.msg || 'Registration failed');
         }

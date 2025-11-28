@@ -23,7 +23,15 @@ async function login() {
 
         if (response.ok) {
             alert('Login successful!');
-            window.location.href = 'dashboard.html'; // Redirect to dashboard
+            
+            // Redirect based on role
+            if (data.role === 'client') {
+                window.location.href = 'client-dashboard.html';
+            } else if (data.role === 'investigator') {
+                window.location.href = 'dashboard.html';
+            } else {
+                window.location.href = 'dashboard.html'; // Default
+            }
         } else {
             alert(data.msg || 'Login failed');
         }

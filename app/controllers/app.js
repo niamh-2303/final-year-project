@@ -60,7 +60,9 @@ app.get('/create-case', requireLogin, (req, res) => {
 
 // Register new account
 app.post('/register-account', async (req, res) => {
-    const { fname, lname, role, email, psw, pswrepeat } = req.body;
+    const { fname, lname, role, email, psw } = req.body;
+    const pswrepeat = req.body['psw-repeat'];
+    
     console.log("Register attempt - email: " + email);
 
     // Validate required fields
@@ -85,11 +87,19 @@ app.post('/register-account', async (req, res) => {
         `;
         
         console.log("User registered successfully");
-        return res.status(200).json({ msg: "Account registered successfully" });
+        
+        // Set session for auto-login after registration
+        req.session.user = email;
+        req.session.role = role;
+        
+        return res.status(200).json({ 
+            msg: "Account registered successfully",
+            role: role  // Send role to frontend
+        });
 
     } catch (err) {
         console.error('Error registering user:', err);
-        if (err.code === '23505') { // PostgreSQL unique constraint error
+        if (err.code === '23505') {
             return res.status(400).json({ msg: "This email is already registered" });
         }
         return res.status(500).json({ msg: "An error occurred during registration" });
@@ -109,9 +119,9 @@ app.post('/login', async (req, res) => {
     console.log("Login attempt - email: " + sanitizedEmail);
 
     try {
-        // Get user from database
+        // Get user from database - also get the role
         const result = await sql`
-            SELECT email, password
+            SELECT email, password, role
             FROM users
             WHERE email = ${sanitizedEmail}
         `;
@@ -122,6 +132,7 @@ app.post('/login', async (req, res) => {
         }
 
         const savedPassword = result[0].password;
+        const userRole = result[0].role;  // Get the role
 
         // Compare passwords
         const match = await bcrypt.compare(pwd, savedPassword);
@@ -129,7 +140,11 @@ app.post('/login', async (req, res) => {
         if (match) {
             console.log("Login successful");
             req.session.user = sanitizedEmail;
-            return res.status(200).json({ msg: "Login successful" });
+            req.session.role = userRole;  // Store role in session
+            return res.status(200).json({ 
+                msg: "Login successful",
+                role: userRole  // Send role to frontend
+            });
         } else {
             console.log("Incorrect password");
             return res.status(401).json({ msg: "Invalid email or password" });
