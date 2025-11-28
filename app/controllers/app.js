@@ -254,6 +254,38 @@ app.delete('/delete-account', async (req, res) => {
     }
 });
 
+// Get current user info
+app.get('/get-user-info', async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ success: false, msg: 'Not logged in' });
+    }
+
+    try {
+        const result = await sql`
+            SELECT first_name, last_name, email, role
+            FROM users
+            WHERE email = ${req.session.user}
+        `;
+
+        if (result.length === 0) {
+            return res.status(404).json({ success: false, msg: 'User not found' });
+        }
+
+        const user = result[0];
+        res.json({
+            success: true,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            email: user.email,
+            role: user.role
+        });
+
+    } catch (error) {
+        console.error('Error fetching user info:', error);
+        res.status(500).json({ success: false, msg: 'Server error' });
+    }
+});
+
 // Start server
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
