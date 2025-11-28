@@ -1,20 +1,118 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>File SHA-256 Generator</title>
+    <title>File SHA-256 & Metadata Extractor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        
+        table {
+            border-collapse: collapse;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        #fileControls {
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        button:hover {
+            background-color: #c0392b;
+        }
+        
+        input[type="file"] {
+            padding: 10px;
+        }
+        
+        code {
+            background-color: #f4f4f4;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Upload File to Generate SHA-256 Hash</h1>
+    <h1>Upload File to Generate SHA-256 Hash & Extract Metadata</h1>
+    <p><em>This is for the Demo to demonstrate Client-side file analysis (Hash + EXIF metadata extraction) which will be implemented in future works to work alongside the backened to be stored in the database for the cases</em></p>
 
     <div id="fileControls">
-        <input type="file" id="fileInput">
-        
-        <button id="clearFileButton" style="display: none;">Delete/Upload Another File</button>
+        <input type="file" id="fileInput" accept="image/*">
+        <button id="clearFileButton" style="display: none;">Clear & Upload Another File</button>
     </div>
 
-    <p>Hash will appear here:</p>
-    <code id="hashOutput">Awaiting file selection...</code>
+    <div id="resultsSection" class="hidden">
+        <div class="section">
+            <h2>File Hash</h2>
+            <table>
+                <tr>
+                    <th>Property</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td><strong>SHA-256 Hash</strong></td>
+                    <td><code id="hashOutput">Calculating...</code></td>
+                </tr>
+            </table>
+        </div>
 
+        <div class="section">
+            <h2>File Metadata</h2>
+            <table id="metadataTable">
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody id="metadataBody">
+                    <tr>
+                        <td colspan="2">Loading metadata...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Include EXIF.js library from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
     <script src="js/sha256_generator.js"></script>
 </body>
 </html>
