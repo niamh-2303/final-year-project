@@ -3,7 +3,7 @@ A DFIR case management web application
 
 # Deployment To make the database
 
-Run the dump.sql file in a new database called database: "final_year_project"
+Run the users_only.sql file in a new database called database: "final_year_project"
 The credentials in db.js may have to be changed to adapt to the users local postgres credentials
 
 # To deploy the web app
