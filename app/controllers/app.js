@@ -54,10 +54,7 @@ app.get('/create-case', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/create-case.html'));
 });
 
-// ============================================
-// AUTHENTICATION ENDPOINTS
-// ============================================
-
+// FOR AUTHENTICATION 
 // Register new account
 app.post('/register-account', async (req, res) => {
     const { fname, lname, role, email, psw } = req.body;
