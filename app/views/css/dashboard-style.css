@@ -582,3 +582,44 @@ textarea.form-control {
 .text-danger {
     color: var(--danger);
 }
+
+/* Cases Table */
+.cases-table {
+    background: white;
+    margin: 0;
+}
+
+.cases-table thead th {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sidebar-text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border-color);
+    padding: 12px;
+    background: var(--sidebar-bg);
+}
+
+.cases-table tbody td {
+    padding: 16px 12px;
+    vertical-align: middle;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.cases-table tbody tr:hover {
+    background: var(--sidebar-bg);
+}
+
+.badge {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+}

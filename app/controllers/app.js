@@ -335,7 +335,7 @@ app.get("/api/search-client", requireLogin, async (req, res) => {
 
 // Create case
 app.post("/api/create-case", requireLogin, async (req, res) => {
-    const { caseNumber, caseName, caseType, clientID, startDate, priority, status } = req.body;
+    const { caseNumber, caseName, caseType, clientID, priority, status } = req.body;
 
     if (!caseNumber || !caseName || !caseType || !clientID || !priority || !status) {
         return res.status(400).json({ msg: "Missing required fields" });
@@ -360,9 +360,9 @@ app.post("/api/create-case", requireLogin, async (req, res) => {
         // Insert case into database
         await sql`
             INSERT INTO cases 
-                (case_number, case_name, description, client_id, investigator_id, start_date, priority, status)
+                (case_number, case_name, description, client_id, investigator_id, priority, status)
             VALUES 
-                (${caseNumber}, ${caseName}, ${caseType}, ${clientID}, ${investigatorID}, ${startDate}, ${priority}, ${status})
+                (${caseNumber}, ${caseName}, ${caseType}, ${clientID}, ${investigatorID}, ${priority}, ${status})
         `;
 
         res.status(200).json({ msg: "Case created successfully" });
@@ -370,6 +370,49 @@ app.post("/api/create-case", requireLogin, async (req, res) => {
     } catch (err) {
         console.error("Error creating case:", err);
         res.status(500).json({ msg: "Error creating case" });
+    }
+});
+
+// Get cases for current user (investigator)
+app.get('/api/my-cases', requireLogin, async (req, res) => {
+    try {
+        const investigatorEmail = req.session.user;
+
+        // Get investigator's user_id
+        const investigator = await sql`
+            SELECT user_id 
+            FROM users 
+            WHERE email = ${investigatorEmail}
+        `;
+
+        if (investigator.length === 0) {
+            return res.status(404).json({ msg: "User not found" });
+        }
+
+        const investigatorID = investigator[0].user_id;
+
+        // Fetch cases assigned to this investigator
+        const cases = await sql`
+            SELECT 
+                c.case_id,
+                c.case_number,
+                c.case_name,
+                c.description,
+                c.priority,
+                c.status,
+                c.created_at,
+                cl.first_name || ' ' || cl.last_name AS client_name
+            FROM cases c
+            LEFT JOIN users cl ON c.client_id = cl.user_id
+            WHERE c.investigator_id = ${investigatorID}
+            ORDER BY c.created_at DESC
+        `;
+
+        res.json({ success: true, cases: cases });
+
+    } catch (err) {
+        console.error("Error fetching cases:", err);
+        res.status(500).json({ success: false, msg: "Error fetching cases" });
     }
 });
 

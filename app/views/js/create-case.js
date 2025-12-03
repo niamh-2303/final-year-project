@@ -1,118 +1,116 @@
-// -----------------------------
-// Auto-fill user info and start date
-// -----------------------------
+// ==============================
+// Fetch current user info
+// ==============================
+fetch("/get-user-info")
+    .then(res => res.json())
+    .then(user => {
+        if (user.success) {
+            document.getElementById("investigator").value = `${user.firstName} ${user.lastName}`;
+        } else {
+            console.error("Failed to fetch user info");
+        }
+    })
+    .catch(err => console.error("Error fetching user info:", err));
+
+// ==============================
+// Auto-generate case number AND set start date
+// ==============================
 window.addEventListener("DOMContentLoaded", () => {
-    // Fill lead investigator
-    fetch("/get-user-info")
-        .then(res => res.json())
-        .then(user => {
-            if (user.success) {
-                const investigatorInput = document.getElementById("investigator");
-                investigatorInput.value = `${user.firstName} ${user.lastName}`;
-            }
-        });
-
-    // Fill start date as today
-    const startDateInput = document.getElementById("startDate");
+    // Set today's date
     const today = new Date().toISOString().split('T')[0];
-    startDateInput.value = today;
+    document.getElementById("startDate").value = today;
 
-    // Generate next case number
+    // Generate case number
     fetch("/api/next-case-number")
         .then(res => res.json())
         .then(data => {
             document.getElementById("caseNumber").value = data.caseNumber;
-        });
+        })
+        .catch(err => console.error("Error fetching case number:", err));
 });
 
-// -----------------------------
-// Client Search
-// -----------------------------
+// ==============================
+// Client search functionality
+// ==============================
 const clientSearchInput = document.getElementById("clientSearch");
 const clientResults = document.getElementById("clientResults");
 const clientIDInput = document.getElementById("clientID");
 
-clientSearchInput.addEventListener("input", () => {
+clientSearchInput.addEventListener("input", async () => {
     const query = clientSearchInput.value.trim();
     if (!query) {
         clientResults.innerHTML = "";
         return;
     }
 
-    fetch(`/api/search-client?q=${encodeURIComponent(query)}`)
-        .then(res => res.json())
-        .then(clients => {
-            clientResults.innerHTML = "";
-            clients.forEach(client => {
-                const item = document.createElement("button");
-                item.type = "button";
-                item.className = "list-group-item list-group-item-action";
-                item.textContent = client.client_name;
-                item.addEventListener("click", () => {
-                    clientSearchInput.value = client.client_name;
-                    clientIDInput.value = client.id;
-                    clientResults.innerHTML = "";
-                });
-                clientResults.appendChild(item);
-            });
-        })
-        .catch(err => console.error("Error searching clients:", err));
-});
+    try {
+        const res = await fetch(`/api/search-client?q=${encodeURIComponent(query)}`);
+        const clients = await res.json();
 
-// Close dropdown if clicking outside
-document.addEventListener("click", (e) => {
-    if (!clientSearchInput.contains(e.target) && !clientResults.contains(e.target)) {
-        clientResults.innerHTML = "";
+        clientResults.innerHTML = clients.map(c => `
+            <button type="button" class="list-group-item list-group-item-action" data-id="${c.id}">
+                ${c.client_name}
+            </button>
+        `).join("");
+
+        clientResults.querySelectorAll("button").forEach(btn => {
+            btn.addEventListener("click", () => {
+                clientSearchInput.value = btn.textContent.trim();
+                clientIDInput.value = btn.dataset.id;
+                clientResults.innerHTML = "";
+            });
+        });
+
+    } catch (err) {
+        console.error("Error searching clients:", err);
     }
 });
 
-// -----------------------------
-// Create Case
-// -----------------------------
+// ==============================
+// Handle form submission
+// ==============================
+// In create-case.js, update createCase():
 async function createCase() {
     const caseName = document.getElementById("caseName").value.trim();
     const caseNumber = document.getElementById("caseNumber").value.trim();
+    const caseType = document.getElementById("description").value.trim();
+    const clientID = document.getElementById("clientID").value;
     const priority = document.getElementById("priority").value;
     const status = document.getElementById("status").value;
-    const description = document.getElementById("description").value.trim();
-    const investigator = document.getElementById("investigator").value.trim();
-    const clientID = document.getElementById("clientID").value;
-    const startDate = document.getElementById("startDate").value;
 
-    // Validate required fields
-    if (!caseName || !caseNumber || !priority || !status || !clientID) {
-        alert("Please fill in all required fields and select a client");
+    console.log("Form data:", { caseName, caseNumber, caseType, clientID, priority, status });
+
+    if (!caseName || !caseNumber || !caseType || !clientID || !priority || !status) {
+        alert("Please fill in all required fields");
+        console.log("Missing fields detected");
         return;
     }
 
-    const caseData = {
-        caseNumber,
-        caseName,
-        caseType: description || "N/A",
-        clientID,
-        startDate,
-        priority,
-        status,
-        investigator
-    };
-
     try {
-        const response = await fetch("/api/create-case", {
+        const res = await fetch("/api/create-case", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(caseData)
+            body: JSON.stringify({ 
+                caseNumber, 
+                caseName, 
+                caseType, 
+                clientID, 
+                priority,    // ADD THIS
+                status       // ADD THIS
+            })
         });
 
-        const result = await response.json();
+        const data = await res.json();
 
-        if (response.ok) {
-            alert(result.msg || "Case created successfully!");
+        if (res.ok) {
+            alert("Case created successfully!");
             window.location.href = "dashboard.html";
         } else {
-            alert(result.msg || "Error creating case");
+            alert("Error creating case: " + data.msg);
         }
+
     } catch (err) {
         console.error("Error creating case:", err);
-        alert("Error creating case. Check console for details.");
+        alert("An unexpected error occurred while creating the case.");
     }
 }
