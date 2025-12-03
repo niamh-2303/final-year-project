@@ -22,13 +22,32 @@ async function loadUserProfile() {
         const data = await response.json();
         
         if (data.success) {
+            // Update header dropdown
             document.getElementById('userName').textContent = `${data.firstName} ${data.lastName}`;
             document.getElementById('userEmail').textContent = data.email;
+            
+            // Update sidebar profile (add these lines)
+            const sidebarName = document.getElementById('sidebarUserName');
+            const sidebarRole = document.getElementById('sidebarUserRole');
+            
+            if (sidebarName) {
+                sidebarName.textContent = `${data.firstName} ${data.lastName}`;
+            }
+            if (sidebarRole) {
+                sidebarRole.textContent = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+            }
         }
     } catch (error) {
         console.error('Error loading profile:', error);
         document.getElementById('userName').textContent = 'User';
         document.getElementById('userEmail').textContent = '';
+        
+        // Update sidebar on error too
+        const sidebarName = document.getElementById('sidebarUserName');
+        const sidebarRole = document.getElementById('sidebarUserRole');
+        
+        if (sidebarName) sidebarName.textContent = 'User';
+        if (sidebarRole) sidebarRole.textContent = 'Role';
     }
 }
 

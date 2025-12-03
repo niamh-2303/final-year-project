@@ -283,6 +283,98 @@ app.get('/get-user-info', async (req, res) => {
     }
 });
 
+// Generate next case number
+app.get('/api/next-case-number', requireLogin, async (req, res) => {
+    try {
+        const rows = await sql`
+            SELECT case_number 
+            FROM cases 
+            ORDER BY case_id DESC 
+            LIMIT 1
+        `;
+
+        let nextNum = 1;
+
+        if (rows.length > 0) {
+            const last = rows[0].case_number; // e.g. "CASE-00004"
+            const num = parseInt(last.replace("CASE-", ""));
+            nextNum = num + 1;
+        }
+
+        const newCaseNumber = "CASE-" + String(nextNum).padStart(5, "0");
+
+        res.json({ caseNumber: newCaseNumber });
+
+    } catch (err) {
+        console.error("Error generating case number:", err);
+        res.status(500).json({ msg: "Server error generating case number" });
+    }
+});
+
+
+// Search clients
+app.get("/api/search-client", requireLogin, async (req, res) => {
+    const q = req.query.q || "";
+
+    try {
+        const results = await sql`
+            SELECT user_id AS id, first_name || ' ' || last_name AS client_name
+            FROM users
+            WHERE role = 'client' AND (first_name || ' ' || last_name) ILIKE ${'%' + q + '%'}
+            LIMIT 10
+        `;
+
+        res.json(results);
+
+    } catch (err) {
+        console.error("Error searching clients:", err);
+        res.status(500).json({ msg: "Error searching clients" });
+    }
+});
+
+
+// Create case
+app.post("/api/create-case", requireLogin, async (req, res) => {
+    const { caseNumber, caseName, caseType, clientID, startDate, priority, status } = req.body;
+
+    if (!caseNumber || !caseName || !caseType || !clientID || !priority || !status) {
+        return res.status(400).json({ msg: "Missing required fields" });
+    }
+
+    try {
+        // Get logged-in user's ID as investigator
+        const investigatorEmail = req.session.user;
+
+        const investigator = await sql`
+            SELECT user_id 
+            FROM users 
+            WHERE email = ${investigatorEmail}
+        `;
+
+        if (investigator.length === 0) {
+            return res.status(404).json({ msg: "Investigator not found" });
+        }
+
+        const investigatorID = investigator[0].user_id;
+
+        // Insert case into database
+        await sql`
+            INSERT INTO cases 
+                (case_number, case_name, description, client_id, investigator_id, start_date, priority, status)
+            VALUES 
+                (${caseNumber}, ${caseName}, ${caseType}, ${clientID}, ${investigatorID}, ${startDate}, ${priority}, ${status})
+        `;
+
+        res.status(200).json({ msg: "Case created successfully" });
+
+    } catch (err) {
+        console.error("Error creating case:", err);
+        res.status(500).json({ msg: "Error creating case" });
+    }
+});
+
+
+
 // Start server
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

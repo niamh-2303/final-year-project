@@ -3,55 +3,261 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DFIR Dashboard</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Create New Case - DFIR</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Your custom CSS -->
+    <link rel="stylesheet" href="css/dashboard-style.css">
 </head>
 <body>
 
-    <!-- TOP NAVBAR -->
-    <nav class="top-nav">
-        <div class="nav-brand">
-            <img src="images/logo.webp" alt="Logo" width="100" height="100">
-            <span>DFIR Case Management</span>
-        </div>
-        
-        <!-- Profile dropdown -->
-        <div class="profile-dropdown">
-            <button class="btn-profile" id="profileButton">
-                <span class="profile-icon">👤</span>
-            </button>
+    <div class="container-fluid p-0">
+        <div class="row g-0">
             
-            <div class="dropdown-menu" id="dropdownMenu">
-                <div class="profile-info">
-                    <strong id="userName">Loading...</strong>
-                    <span id="userEmail">user@example.com</span>
+            <!-- LEFT SIDEBAR -->
+            <nav class="col-md-2 sidebar">
+                <!-- Logo Section -->
+                <div class="sidebar-logo">
+                    <div class="logo-wrapper">
+                        <img src="images/logo.webp" alt="Logo" class="sidebar-logo-img">
+                    </div>
+                    <div class="logo-text">
+                        <h5>DFIR</h5>
+                        <small>Case Management</small>
+                    </div>
                 </div>
-                <hr>
-                <button class="dropdown-item" onclick="logout()">
-                    <span>🚪</span> Logout
-                </button>
-            </div>
+
+                <!-- Main Navigation -->
+                <div class="sidebar-section">
+                    <h6 class="sidebar-heading">MAIN</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="dashboard.html">
+                                <i class="bi bi-speedometer2"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-folder"></i>
+                                <span>Archive</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-graph-up"></i>
+                                <span>Reports</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="sidebar-section">
+                    <h6 class="sidebar-heading">SHORTCUTS</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-gear"></i>
+                                <span>Settings</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- User Profile at Bottom -->
+                <div class="sidebar-profile">
+                    <div class="profile-avatar">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="profile-details">
+                        <strong id="sidebarUserName">Loading...</strong>
+                        <small id="sidebarUserRole">Investigator</small>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- MAIN CONTENT -->
+            <main class="col-md-10 main-content">
+                
+                <!-- Top Header -->
+                <div class="content-header">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <div class="breadcrumb-nav">
+                                <i class="bi bi-house-door"></i>
+                                <span>Home</span>
+                                <i class="bi bi-chevron-right"></i>
+                                <span>Create Case</span>
+                            </div>
+                            <h1 class="page-title">Create New Case</h1>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-outline-secondary" onclick="window.location.href='dashboard.html'">
+                                <i class="bi bi-x-lg"></i>
+                                <span>Cancel</span>
+                            </button>
+                            
+                            <!-- Profile Dropdown -->
+                            <div class="dropdown">
+                                <button class="btn btn-profile-header" id="profileButton" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end profile-dropdown-menu">
+                                    <li class="dropdown-header">
+                                        <div class="profile-info-dropdown">
+                                            <strong id="userName">Loading...</strong>
+                                            <small id="userEmail">user@example.com</small>
+                                        </div>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="logout()">
+                                            <i class="bi bi-box-arrow-right"></i>
+                                            Logout
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Section -->
+                <div class="form-section">
+                    <form id="createCaseForm" onsubmit="event.preventDefault(); createCase();">
+                        
+                        <!-- Case Information Card -->
+                        <div class="form-card">
+                            <h4 class="form-card-title">
+                                <i class="bi bi-info-circle"></i>
+                                Case Information
+                            </h4>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="caseName" class="form-label">Case Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="caseName" placeholder="Enter case name" required>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="caseNumber" class="form-label">Case Number <span class="text-danger">*</span></label>
+                                    <input type="text" id="caseNumber" class="form-control" readonly>                                
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="priority" required>
+                                        <option value="" selected disabled>Select priority</option>
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="critical">Critical</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="status" required>
+                                        <option value="active" selected>Active</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="closed">Closed</option>
+                                    </select>
+                                </div>
+
+                                <!-- Client Search -->
+                                <div class="col-md-6 position-relative">
+                                    <label for="clientSearch" class="form-label">Client (Search)</label>
+                                    <input type="text" class="form-control" id="clientSearch" placeholder="Search for a client..." autocomplete="off">
+                                    
+                                    <!-- Results dropdown -->
+                                    <div class="list-group position-absolute w-100" id="clientResults" style="z-index: 1000; max-height: 200px; overflow-y: auto;"></div>
+
+                                    <!-- Hidden client ID -->
+                                    <input type="hidden" id="clientID">
+                                </div>
+
+                                <!-- Start Date (auto-filled) -->
+                                <div class="col-md-6">
+                                    <label for="startDate" class="form-label">Start Date</label>
+                                    <input type="date" id="startDate" class="form-control" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assignment Card -->
+                        <div class="form-card">
+                            <h4 class="form-card-title">
+                                <i class="bi bi-people"></i>
+                                Inital Assignment
+                            </h4>
+                            
+                            <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Lead Investigator</label>
+                                <input type="text" id="investigator" class="form-control" readonly>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="description" class="form-label">Type of case</label>
+                                <textarea class="form-control" id="description" rows="1" placeholder="Enter the type of case..."></textarea>
+                            </div>
+                            </div>
+                        </div>
+
+                        <!-- Client Access -->
+                        <div class="form-card">
+                            <h4 class="form-card-title">
+                                <i class="bi bi-people"></i>
+                                Enable Client Access?
+                            </h4>
+
+                            <!-- Toggle Checkbox -->
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="clientAccessToggle">
+                                <label class="form-check-label" for="clientAccessToggle">Allow client access</label>
+                            </div>
+                        </div>
+
+
+                        <!-- Action Buttons -->
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='dashboard.html'">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i>
+                                Create Case and Assign Team
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+
+            </main>
+
         </div>
-    </nav>
-    <div class="page-layout">
-
-        <!-- LEFT SIDEBAR -->
-        <nav class="side-nav">
-            <ul>
-                <li><a href="dashboard.html">Dashboard</a></li>
-                <li><a href="#">Archive</a></li>
-                <li><a href="#">Settings</a></li>
-            </ul>
-        </nav>
-
-        <!-- MAIN CONTENT -->
-        <main class="main-content">
-            <h1>Create a New Case</h1>
-            
-        </main>
-
     </div>
 
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/logout.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/create-case.js"></script>
+    <script>
+        document.getElementById("clientAccessToggle").addEventListener("change", function () {
+            const enabled = this.checked;
+            const fields = document.querySelectorAll("#clientAccessFields select");
+            const container = document.getElementById("clientAccessFields");
+
+            fields.forEach(field => field.disabled = !enabled);
+
+            // Optional visual cue
+            container.classList.toggle("opacity-50", !enabled);
+        });
+    </script>
+    
 </body>
 </html>
