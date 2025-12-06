@@ -1,4 +1,9 @@
 // ==============================
+// Store case data temporarily (Global declaration)
+// ==============================
+let tempCaseData = null; // Declared once at the top
+
+// ==============================
 // Fetch current user info
 // ==============================
 fetch("/get-user-info")
@@ -67,9 +72,8 @@ clientSearchInput.addEventListener("input", async () => {
 });
 
 // ==============================
-// Handle form submission
+// Handle form submission - Save data and go to assign team (NEW LOGIC)
 // ==============================
-// In create-case.js, update createCase():
 async function createCase() {
     const caseName = document.getElementById("caseName").value.trim();
     const caseNumber = document.getElementById("caseNumber").value.trim();
@@ -86,31 +90,19 @@ async function createCase() {
         return;
     }
 
-    try {
-        const res = await fetch("/api/create-case", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                caseNumber, 
-                caseName, 
-                caseType, 
-                clientID, 
-                priority,    // ADD THIS
-                status       // ADD THIS
-            })
-        });
+    // Store data temporarily in sessionStorage
+    tempCaseData = {
+        caseNumber,
+        caseName,
+        caseType,
+        clientID,
+        priority,
+        status
+    };
 
-        const data = await res.json();
+    // The key is 'tempCaseData'
+    sessionStorage.setItem('tempCaseData', JSON.stringify(tempCaseData));
 
-        if (res.ok) {
-            alert("Case created successfully!");
-            window.location.href = "dashboard.html";
-        } else {
-            alert("Error creating case: " + data.msg);
-        }
-
-    } catch (err) {
-        console.error("Error creating case:", err);
-        alert("An unexpected error occurred while creating the case.");
-    }
+    // Redirect to assign team page
+    window.location.href = 'assign-team.html';
 }

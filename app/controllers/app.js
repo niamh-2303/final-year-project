@@ -81,6 +81,14 @@ app.get('/client-dashboard.html', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/client-dashboard.html'));
 });
 
+app.get('/assign-team', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/assign-team.html'));
+});
+
+app.get('/assign-team.html', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/assign-team.html'));
+});
+
 // ===== AUTHENTICATION ENDPOINTS =====
 
 // Register new account
@@ -447,6 +455,86 @@ app.get('/api/my-cases', requireLogin, async (req, res) => {
     } catch (err) {
         console.error("Error fetching cases:", err);
         res.status(500).json({ success: false, msg: "Error fetching cases" });
+    }
+});
+
+// Search investigators (only users with role 'investigator')
+app.get("/api/search-investigator", requireLogin, async (req, res) => {
+    const q = req.query.q || "";
+
+    try {
+        const results = await sql`
+            SELECT 
+                user_id AS id, 
+                first_name || ' ' || last_name AS name,
+                email
+            FROM users
+            WHERE role = 'investigator' 
+            AND (first_name || ' ' || last_name || ' ' || email) ILIKE ${'%' + q + '%'}
+            LIMIT 10
+        `;
+
+        res.json(results);
+
+    } catch (err) {
+        console.error("Error searching investigators:", err);
+        res.status(500).json({ msg: "Error searching investigators" });
+    }
+});
+
+// Create case with team members
+app.post("/api/create-case-with-team", requireLogin, async (req, res) => {
+    const { caseNumber, caseName, caseType, clientID, priority, status, teamMembers } = req.body;
+
+    console.log("Received case data with team:", { caseNumber, caseName, caseType, clientID, priority, status, teamMembers });
+
+    if (!caseNumber || !caseName || !caseType || !clientID || !priority || !status) {
+        return res.status(400).json({ msg: "Missing required fields" });
+    }
+
+    try {
+        // Get logged-in user's ID as lead investigator
+        const investigatorEmail = req.session.user;
+
+        const investigator = await sql`
+            SELECT user_id 
+            FROM users 
+            WHERE email = ${investigatorEmail}
+        `;
+
+        if (investigator.length === 0) {
+            return res.status(404).json({ msg: "Investigator not found" });
+        }
+
+        const investigatorID = investigator[0].user_id;
+
+        // Insert case into database
+        const caseResult = await sql`
+            INSERT INTO cases 
+                (case_number, case_name, description, client_id, investigator_id, priority, status, created_at)
+            VALUES 
+                (${caseNumber}, ${caseName}, ${caseType}, ${clientID}, ${investigatorID}, ${priority}, ${status}, NOW())
+            RETURNING case_id
+        `;
+
+        const caseID = caseResult[0].case_id;
+
+        // Assign team members to case (if you have a case_team table)
+        if (teamMembers && teamMembers.length > 0) {
+            for (const memberID of teamMembers) {
+                await sql`
+                    INSERT INTO case_team (case_id, investigator_id)
+                    VALUES (${caseID}, ${memberID})
+                `;
+            }
+        }
+
+        console.log("Case created successfully with team members");
+        res.status(200).json({ msg: "Case created successfully", caseID: caseID });
+
+    } catch (err) {
+        console.error("Error creating case:", err);
+        res.status(500).json({ msg: "Error creating case: " + err.message });
     }
 });
 
