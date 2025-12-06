@@ -22,29 +22,29 @@ app.use(session({
 
 app.use(cors());
 
-// Serve all static files (CSS, JS, images)
-app.use(express.static(path.join(__dirname, '../views')));
+// Serve static files (CSS, JS, images) - These are always accessible
+app.use('/css', express.static(path.join(__dirname, '../views/css')));
+app.use('/js', express.static(path.join(__dirname, '../views/js')));
+app.use('/images', express.static(path.join(__dirname, '../views/images')));
 
 // Middleware to check if user is logged in
 var requireLogin = function (req, res, next) {
     console.log('Checking if user is logged in');
     if (req.session.user == null) {
-        console.log('User not logged in');
-        res.sendFile(path.join(__dirname, '../views/index.html'));
+        console.log('User not logged in - redirecting to login page');
+        return res.redirect('/');
     } else {
         console.log('User logged in: ' + req.session.user);
         next();
     }
 };
 
-// Start server
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// ===== PUBLIC ROUTES (No login required) =====
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/index.html'));
 });
 
-// HTML routes
-app.get('/', (req, res) => {
+app.get('/index.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../views/index.html'));
 });
 
@@ -52,7 +52,16 @@ app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, '../views/register.html'));
 });
 
+app.get('/register.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/register.html'));
+});
+
+// ===== PROTECTED ROUTES (Login required) =====
 app.get('/dashboard', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/dashboard.html'));
+});
+
+app.get('/dashboard.html', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/dashboard.html'));
 });
 
@@ -60,7 +69,20 @@ app.get('/create-case', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/create-case.html'));
 });
 
-// FOR AUTHENTICATION 
+app.get('/create-case.html', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/create-case.html'));
+});
+
+app.get('/client-dashboard', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/client-dashboard.html'));
+});
+
+app.get('/client-dashboard.html', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/client-dashboard.html'));
+});
+
+// ===== AUTHENTICATION ENDPOINTS =====
+
 // Register new account
 app.post('/register-account', async (req, res) => {
     const { fname, lname, role, email, psw } = req.body;
@@ -97,7 +119,7 @@ app.post('/register-account', async (req, res) => {
         
         return res.status(200).json({ 
             msg: "Account registered successfully",
-            role: role  // Send role to frontend
+            role: role
         });
 
     } catch (err) {
@@ -135,7 +157,7 @@ app.post('/login', async (req, res) => {
         }
 
         const savedPassword = result[0].password;
-        const userRole = result[0].role;  // Get the role
+        const userRole = result[0].role;
 
         // Compare passwords
         const match = await bcrypt.compare(pwd, savedPassword);
@@ -143,10 +165,10 @@ app.post('/login', async (req, res) => {
         if (match) {
             console.log("Login successful");
             req.session.user = sanitizedEmail;
-            req.session.role = userRole;  // Store role in session
+            req.session.role = userRole;
             return res.status(200).json({ 
                 msg: "Login successful",
-                role: userRole  // Send role to frontend
+                role: userRole
             });
         } else {
             console.log("Incorrect password");
@@ -166,7 +188,7 @@ app.get('/logout', (req, res) => {
             console.error("Error destroying session:", err);
             return res.status(500).json({ msg: "Error logging out" });
         }
-        res.sendFile(path.join(__dirname, '../views/index.html'));
+        res.redirect('/');
     });
 });
 
@@ -289,6 +311,8 @@ app.get('/get-user-info', async (req, res) => {
     }
 });
 
+// ===== CASE MANAGEMENT ENDPOINTS =====
+
 // Generate next case number
 app.get('/api/next-case-number', requireLogin, async (req, res) => {
     try {
@@ -302,7 +326,7 @@ app.get('/api/next-case-number', requireLogin, async (req, res) => {
         let nextNum = 1;
 
         if (rows.length > 0) {
-            const last = rows[0].case_number; // e.g. "CASE-00004"
+            const last = rows[0].case_number;
             const num = parseInt(last.replace("CASE-", ""));
             nextNum = num + 1;
         }
@@ -316,7 +340,6 @@ app.get('/api/next-case-number', requireLogin, async (req, res) => {
         res.status(500).json({ msg: "Server error generating case number" });
     }
 });
-
 
 // Search clients
 app.get("/api/search-client", requireLogin, async (req, res) => {
@@ -338,10 +361,11 @@ app.get("/api/search-client", requireLogin, async (req, res) => {
     }
 });
 
-
 // Create case
 app.post("/api/create-case", requireLogin, async (req, res) => {
     const { caseNumber, caseName, caseType, clientID, priority, status } = req.body;
+
+    console.log("Received case data:", { caseNumber, caseName, caseType, clientID, priority, status });
 
     if (!caseNumber || !caseName || !caseType || !clientID || !priority || !status) {
         return res.status(400).json({ msg: "Missing required fields" });
@@ -363,19 +387,23 @@ app.post("/api/create-case", requireLogin, async (req, res) => {
 
         const investigatorID = investigator[0].user_id;
 
+        console.log("Investigator ID:", investigatorID);
+        console.log("Client ID:", clientID);
+
         // Insert case into database
         await sql`
             INSERT INTO cases 
-                (case_number, case_name, description, client_id, investigator_id, priority, status)
+                (case_number, case_name, description, client_id, investigator_id, priority, status, created_at)
             VALUES 
-                (${caseNumber}, ${caseName}, ${caseType}, ${clientID}, ${investigatorID}, ${priority}, ${status})
+                (${caseNumber}, ${caseName}, ${caseType}, ${clientID}, ${investigatorID}, ${priority}, ${status}, NOW())
         `;
 
+        console.log("Case created successfully");
         res.status(200).json({ msg: "Case created successfully" });
 
     } catch (err) {
         console.error("Error creating case:", err);
-        res.status(500).json({ msg: "Error creating case" });
+        res.status(500).json({ msg: "Error creating case: " + err.message });
     }
 });
 
@@ -422,5 +450,13 @@ app.get('/api/my-cases', requireLogin, async (req, res) => {
     }
 });
 
+// Catch-all middleware for any undefined routes
+app.use((req, res) => {
+    res.redirect('/');
+});
 
-
+// Start server
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
