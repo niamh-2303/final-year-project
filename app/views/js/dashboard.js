@@ -101,10 +101,10 @@ function createCaseRow(caseData) {
             <td><span class="${statusClass[caseData.status]}">${caseData.status}</span></td>
             <td>${createdDate}</td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="viewCase(${caseData.case_id})">
+                <button class="btn btn-sm btn-outline-primary" onclick="viewCase(${caseData.case_id})" aria-label="View Case">
                     <i class="bi bi-eye"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="editCase(${caseData.case_id})">
+                <button class="btn btn-sm btn-outline-secondary" onclick="editCase(${caseData.case_id})" aria-label="Edit Case">
                     <i class="bi bi-pencil"></i>
                 </button>
             </td>
