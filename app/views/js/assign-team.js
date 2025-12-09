@@ -173,7 +173,8 @@ async function saveCase() {
             sessionStorage.removeItem('tempCaseData');
             
             alert("Case created successfully with team assigned!");
-            window.location.href = "dashboard.html";
+            // Redirect to case area page with the case ID
+            window.location.href = `case-area.html?id=${data.caseID}`;
         } else {
             alert("Error creating case: " + data.msg);
         }

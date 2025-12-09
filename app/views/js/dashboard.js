@@ -101,10 +101,10 @@ function createCaseRow(caseData) {
             <td><span class="${statusClass[caseData.status]}">${caseData.status}</span></td>
             <td>${createdDate}</td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="viewCase(${caseData.case_id})" aria-label="View Case">
+                <button class="btn btn-sm btn-outline-primary" onclick="viewCase(${caseData.case_id})">
                     <i class="bi bi-eye"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="editCase(${caseData.case_id})" aria-label="Edit Case">
+                <button class="btn btn-sm btn-outline-secondary" onclick="editCase(${caseData.case_id})">
                     <i class="bi bi-pencil"></i>
                 </button>
             </td>
@@ -112,15 +112,16 @@ function createCaseRow(caseData) {
     `;
 }
 
-// View case details (placeholder)
+// View case details
 function viewCase(caseId) {
-    alert(`View case ${caseId} - Feature coming soon!`);
+    window.location.href = `case-area.html?id=${caseId}`;
 }
 
-// Edit case (placeholder)
+// Edit case (also goes to case area)
 function editCase(caseId) {
-    alert(`Edit case ${caseId} - Feature coming soon!`);
+    window.location.href = `case-area.html?id=${caseId}`;
 }
+
 
 // Load cases when page loads
 document.addEventListener('DOMContentLoaded', loadCases);

@@ -89,6 +89,14 @@ app.get('/assign-team.html', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/assign-team.html'));
 });
 
+app.get('/case-area', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/case-area.html'));
+});
+
+app.get('/case-area.html', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/case-area.html'));
+});
+
 // ===== AUTHENTICATION ENDPOINTS =====
 
 // Register new account
@@ -535,6 +543,34 @@ app.post("/api/create-case-with-team", requireLogin, async (req, res) => {
     } catch (err) {
         console.error("Error creating case:", err);
         res.status(500).json({ msg: "Error creating case: " + err.message });
+    }
+});
+
+// Get single case details
+app.get('/api/case/:id', requireLogin, async (req, res) => {
+    const caseId = req.params.id;
+
+    try {
+        const caseResult = await sql`
+            SELECT 
+                c.*,
+                cl.first_name || ' ' || cl.last_name AS client_name,
+                inv.first_name || ' ' || inv.last_name AS investigator_name
+            FROM cases c
+            LEFT JOIN users cl ON c.client_id = cl.user_id
+            LEFT JOIN users inv ON c.investigator_id = inv.user_id
+            WHERE c.case_id = ${caseId}
+        `;
+
+        if (caseResult.length === 0) {
+            return res.status(404).json({ success: false, msg: "Case not found" });
+        }
+
+        res.json({ success: true, case: caseResult[0] });
+
+    } catch (err) {
+        console.error("Error fetching case:", err);
+        res.status(500).json({ success: false, msg: "Error fetching case" });
     }
 });
 

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Area - DFIR</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Your custom CSS -->
+    <link rel="stylesheet" href="css/dashboard-style.css">
+</head>
+<body>
+
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            
+            <!-- LEFT SIDEBAR -->
+            <nav class="col-md-2 sidebar">
+                <!-- Logo Section -->
+                <div class="sidebar-logo">
+                    <div class="logo-wrapper">
+                        <img src="images/logo.webp" alt="Logo" class="sidebar-logo-img">
+                    </div>
+                    <div class="logo-text">
+                        <h5>DFIR</h5>
+                        <small>Case Management</small>
+                    </div>
+                </div>
+
+                <!-- Main Navigation -->
+                <div class="sidebar-section">
+                    <h6 class="sidebar-heading">MAIN</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="dashboard.html">
+                                <i class="bi bi-speedometer2"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-folder"></i>
+                                <span>Archive</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-graph-up"></i>
+                                <span>Reports</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="sidebar-section">
+                    <h6 class="sidebar-heading">SHORTCUTS</h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-gear"></i>
+                                <span>Settings</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- User Profile at Bottom -->
+                <div class="sidebar-profile">
+                    <div class="profile-avatar">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="profile-details">
+                        <strong id="sidebarUserName">Loading...</strong>
+                        <small id="sidebarUserRole">Investigator</small>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- MAIN CONTENT -->
+            <main class="col-md-10 main-content">
+                
+                <!-- Top Header -->
+                <div class="content-header">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <div class="breadcrumb-nav">
+                                <i class="bi bi-house-door"></i>
+                                <span>Home</span>
+                                <i class="bi bi-chevron-right"></i>
+                                <span>Cases</span>
+                                <i class="bi bi-chevron-right"></i>
+                                <span id="breadcrumbCaseNumber">Loading...</span>
+                            </div>
+                            <h1 class="page-title">
+                                <span id="caseName">Loading...</span>
+                                <span class="badge bg-success ms-2" id="caseStatus">Active</span>
+                            </h1>
+                            <p class="text-muted mb-0">
+                                Case Number: <strong id="caseNumber">Loading...</strong> | 
+                                Priority: <span class="badge bg-danger" id="casePriority">High</span>
+                            </p>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-outline-secondary" onclick="window.location.href='dashboard.html'">
+                                <i class="bi bi-arrow-left"></i>
+                                <span>Back to Dashboard</span>
+                            </button>
+                            
+                            <!-- Profile Dropdown -->
+                            <div class="dropdown">
+                                <button class="btn btn-profile-header" id="profileButton" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end profile-dropdown-menu">
+                                    <li class="dropdown-header">
+                                        <div class="profile-info-dropdown">
+                                            <strong id="userName">Loading...</strong>
+                                            <small id="userEmail">user@example.com</small>
+                                        </div>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="logout()">
+                                            <i class="bi bi-box-arrow-right"></i>
+                                            Logout
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Case Navigation Tabs -->
+                    <ul class="nav nav-tabs case-tabs" id="caseTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                                <i class="bi bi-info-circle"></i> Overview
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="evidence-tab" data-bs-toggle="tab" data-bs-target="#evidence" type="button" role="tab">
+                                <i class="bi bi-file-earmark-text"></i> Evidence
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="team-tab" data-bs-toggle="tab" data-bs-target="#team" type="button" role="tab">
+                                <i class="bi bi-people"></i> Team
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">
+                                <i class="bi bi-journal-text"></i> Notes
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button" role="tab">
+                                <i class="bi bi-clock-history"></i> Timeline
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="tab-content p-4" id="caseTabsContent">
+                    
+                    <!-- Overview Tab -->
+                    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-card">
+                                    <h4 class="form-card-title">
+                                        <i class="bi bi-info-circle"></i>
+                                        Case Details
+                                    </h4>
+                                    <p class="text-muted">Overview section content will go here...</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-card">
+                                    <h4 class="form-card-title">
+                                        <i class="bi bi-speedometer2"></i>
+                                        Quick Stats
+                                    </h4>
+                                    <p class="text-muted">Stats content will go here...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Evidence Tab -->
+                    <div class="tab-pane fade" id="evidence" role="tabpanel">
+                        <div class="form-card">
+                            <h4 class="form-card-title">
+                                <i class="bi bi-file-earmark-text"></i>
+                                Evidence Management
+                            </h4>
+                            <p class="text-muted">Evidence section content will go here...</p>
+                        </div>
+                    </div>
+
+                    <!-- Team Tab -->
+                    <div class="tab-pane fade" id="team" role="tabpanel">
+                        <div class="form-card">
+                            <h4 class="form-card-title">
+                                <i class="bi bi-people"></i>
+                                Team Members
+                            </h4>
+                            <p class="text-muted">Team section content will go here...</p>
+                        </div>
+                    </div>
+
+                    <!-- Notes Tab -->
+                    <div class="tab-pane fade" id="notes" role="tabpanel">
+                        <div class="form-card">
+                            <h4 class="form-card-title">
+                                <i class="bi bi-journal-text"></i>
+                                Case Notes
+                            </h4>
+                            <p class="text-muted">Notes section content will go here...</p>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Tab -->
+                    <div class="tab-pane fade" id="timeline" role="tabpanel">
+                        <div class="form-card">
+                            <h4 class="form-card-title">
+                                <i class="bi bi-clock-history"></i>
+                                Case Timeline
+                            </h4>
+                            <p class="text-muted">Timeline section content will go here...</p>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/logout.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/case-area.js"></script>
+    
+</body>
+</html>
