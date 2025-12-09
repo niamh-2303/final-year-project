@@ -6,6 +6,8 @@ const bcrypt = require('bcrypt');
 const session = require('express-session');
 const validator = require('validator');
 const bodyParser = require('body-parser');
+const multer = require('multer');
+
 
 const app = express();
 const saltRounds = 10;
@@ -22,10 +24,12 @@ app.use(session({
 
 app.use(cors());
 
-// Serve static files (CSS, JS, images) - These are always accessible
+// Serve static files  - These are always accessible
 app.use('/css', express.static(path.join(__dirname, '../views/css')));
 app.use('/js', express.static(path.join(__dirname, '../views/js')));
 app.use('/images', express.static(path.join(__dirname, '../views/images')));
+app.use('/uploads', express.static(path.join(__dirname, 'controllers/uploads')));
+
 
 // Middleware to check if user is logged in
 var requireLogin = function (req, res, next) {
@@ -546,7 +550,6 @@ app.post("/api/create-case-with-team", requireLogin, async (req, res) => {
     }
 });
 
-// Get single case details
 // Get single case details WITH team info
 app.get('/api/case/:id', requireLogin, async (req, res) => {
     const caseId = req.params.id;
@@ -612,6 +615,110 @@ app.get('/api/case/:id', requireLogin, async (req, res) => {
         res.status(500).json({ success: false, msg: "Error fetching case" });
     }
 });
+
+// Setup storage for uploaded files
+const fs = require('fs');
+
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, uploadsDir);
+    },
+    filename: function(req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+const upload = multer({ storage });
+
+app.post('/api/upload-evidence', upload.single('file'), async (req, res) => {
+    try {
+        const { case_id, file_hash, ...exif } = req.body;
+        const file_path = req.file.path;
+
+        const result = await sql`
+            INSERT INTO evidence (
+                case_id,
+                evidence_name,
+                file_path,
+                file_hash,
+                make, model,
+                datetime_original,
+                datetime_digitized,
+                orientation,
+                x_resolution,
+                y_resolution,
+                software,
+                artist,
+                copyright,
+                exposure_time,
+                f_number,
+                iso,
+                focal_length,
+                flash,
+                white_balance,
+                pixel_x_dimension,
+                pixel_y_dimension
+            ) VALUES (
+                ${case_id},
+                ${req.file.originalname},
+                ${file_path},
+                ${file_hash},
+                ${exif.Make || null},
+                ${exif.Model || null},
+                ${exif.DateTimeOriginal || null},
+                ${exif.DateTimeDigitized || null},
+                ${exif.Orientation || null},
+                ${exif.XResolution || null},
+                ${exif.YResolution || null},
+                ${exif.Software || null},
+                ${exif.Artist || null},
+                ${exif.Copyright || null},
+                ${exif.ExposureTime || null},
+                ${exif.FNumber || null},
+                ${exif.ISO || null},
+                ${exif.FocalLength || null},
+                ${exif.Flash || null},
+                ${exif.WhiteBalance || null},
+                ${exif.PixelXDimension || null},
+                ${exif.PixelYDimension || null}
+            )
+            RETURNING *;
+        `;
+
+        res.json({ success: true, evidence: result[0] });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Get all evidence for a case
+app.get('/api/get-evidence', requireLogin, async (req, res) => {
+    const caseId = req.query.case_id;
+    if (!caseId) return res.status(400).json({ success: false, msg: 'Missing case_id' });
+
+    try {
+        const evidence = await sql`
+            SELECT *
+            FROM evidence
+            WHERE case_id = ${caseId}
+            ORDER BY collected_at DESC
+        `;
+        res.json(evidence);
+    } catch (err) {
+        console.error("Error fetching evidence:", err);
+        res.status(500).json({ success: false, msg: "Server error fetching evidence" });
+    }
+});
+
+
+
 
 
 // Catch-all middleware for any undefined routes

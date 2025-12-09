@@ -9,11 +9,14 @@ document.getElementById('profileButton').addEventListener('click', function(even
 document.addEventListener('click', function(event) {
     const dropdown = document.getElementById('dropdownMenu');
     const profileButton = document.getElementById('profileButton');
-    
-    if (!profileButton.contains(event.target) && !dropdown.contains(event.target)) {
-        dropdown.classList.remove('show');
+
+    if (profileButton && dropdown) {
+        if (!profileButton.contains(event.target) && !dropdown.contains(event.target)) {
+            dropdown.classList.remove('show');
+        }
     }
 });
+
 
 // Fetch and display user info
 async function loadUserProfile() {
