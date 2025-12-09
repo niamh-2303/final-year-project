@@ -623,3 +623,52 @@ textarea.form-control {
     padding: 6px 12px;
     font-size: 12px;
 }
+
+/* ==================== Case area scroll tab navigation ==================== */
+.case-tabs-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;       /* Scroll happens here */
+    overflow-y: hidden;
+    white-space: nowrap;
+}
+
+.case-tabs {
+    display: inline-flex;   /* Important */
+    flex-wrap: nowrap;      /* Prevents wrapping */
+    width: max-content;     /* Allows expansion beyond screen width */
+}
+
+/* Apply ONLY to the horizontal tabs scrollbar */
+.case-tabs-scroll-wrapper::-webkit-scrollbar {
+    height: 3px;        
+}
+
+.case-tabs-scroll-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.case-tabs-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.case-tabs-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #a0a0a0;
+}
+
+/* Firefox support */
+.case-tabs-scroll-wrapper {
+    scrollbar-width: thin;       /* Thin scrollbar */
+    scrollbar-color: #c1c1c1 transparent;
+}
+
+.form-card.case-page {
+    width: 80%;
+    padding: 40px;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid var(--border-color);
+    background: var(--white);
+    margin-left: 0; 
+}
+

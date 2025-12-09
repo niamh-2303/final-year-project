@@ -99,7 +99,7 @@
                                 <span class="badge bg-success ms-2" id="caseStatus">Active</span>
                             </h1>
                             <p class="text-muted mb-0">
-                                Case Number: <strong id="caseNumber">Loading...</strong> | 
+                                Case ID: <strong id="caseNumber">Loading...</strong> | 
                                 Priority: <span class="badge bg-danger" id="casePriority">High</span>
                             </p>
                         </div>
@@ -111,7 +111,7 @@
                             
                             <!-- Profile Dropdown -->
                             <div class="dropdown">
-                                <button class="btn btn-profile-header" id="profileButton" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-profile-header" id="profileButton" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="profile button">
                                     <i class="bi bi-person-circle"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end profile-dropdown-menu">
@@ -133,34 +133,57 @@
                         </div>
                     </div>
 
-                    <!-- Case Navigation Tabs -->
-                    <ul class="nav nav-tabs case-tabs" id="caseTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
-                                <i class="bi bi-info-circle"></i> Overview
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="evidence-tab" data-bs-toggle="tab" data-bs-target="#evidence" type="button" role="tab">
-                                <i class="bi bi-file-earmark-text"></i> Evidence
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="team-tab" data-bs-toggle="tab" data-bs-target="#team" type="button" role="tab">
-                                <i class="bi bi-people"></i> Team
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">
-                                <i class="bi bi-journal-text"></i> Notes
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button" role="tab">
-                                <i class="bi bi-clock-history"></i> Timeline
-                            </button>
-                        </li>
-                    </ul>
+                    <div class="case-tabs-scroll-wrapper">
+                        <ul class="nav nav-tabs case-tabs" id="caseTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">
+                                    <i class="bi bi-info-circle"></i> Overview
+                                </button>
+                            </li>
+                            
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="evidence-tab" data-bs-toggle="tab" data-bs-target="#evidence" type="button" role="tab" aria-controls="evidence" aria-selected="false">
+                                    <i class="bi bi-file-earmark-text"></i> Evidence Log
+                                </button>
+                            </li>
+                            
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="coc-tab" data-bs-toggle="tab" data-bs-target="#CoC" type="button" role="tab" aria-controls="CoC" aria-selected="false">
+                                    <i class="bi bi-book"></i> Chain of Custody
+                                </button>
+                            </li>
+                            
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="evidence-upload-tab" data-bs-toggle="tab" data-bs-target="#evidenceUpload" type="button" role="tab" aria-controls="evidenceUpload" aria-selected="false">
+                                    <i class="bi bi-upload"></i> Upload
+                                </button>
+                            </li>
+                            
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="team-tab" data-bs-toggle="tab" data-bs-target="#team" type="button" role="tab" aria-controls="team" aria-selected="false">
+                                    <i class="bi bi-people"></i> Team
+                                </button>
+                            </li>
+                            
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="findings-tab" data-bs-toggle="tab" data-bs-target="#findings" type="button" role="tab" aria-controls="findings" aria-selected="false">
+                                    <i class="bi bi-journal-text"></i> Findings
+                                </button>
+                            </li>
+                            
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button" role="tab" aria-controls="timeline" aria-selected="false">
+                                    <i class="bi bi-clock-history"></i> Timeline
+                                </button>
+                            </li>
+                            
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="signoff-tab" data-bs-toggle="tab" data-bs-target="#signoff" type="button" role="tab" aria-controls="signoff" aria-selected="false">
+                                    <i class="bi bi-check-square"></i> Report Sign-off
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
 
                 <!-- Tab Content -->
@@ -170,7 +193,7 @@
                     <div class="tab-pane fade show active" id="overview" role="tabpanel">
                         <div class="row">
                             <div class="col-md-8">
-                                <div class="form-card">
+                                <div class="form-card case-page">
                                     <h4 class="form-card-title">
                                         <i class="bi bi-info-circle"></i>
                                         Case Details
@@ -179,7 +202,7 @@
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="form-card">
+                                <div class="form-card case-page">
                                     <h4 class="form-card-title">
                                         <i class="bi bi-speedometer2"></i>
                                         Quick Stats
@@ -190,20 +213,42 @@
                         </div>
                     </div>
 
-                    <!-- Evidence Tab -->
+                    <!-- Chain of Custody Tab -->
+                    <div class="tab-pane fade" id="CoC" role="tabpanel">
+                        <div class="form-card case-page">
+                            <h4 class="form-card-title">
+                                <i class="bi bi-book"></i>
+                                Chain of Custody
+                            </h4>
+                            <p class="text-muted">Chain of Custody log content will go here...</p>
+                        </div>
+                    </div>
+
+                    <!-- Evidence Upload -->
+                    <div class="tab-pane fade" id="evidenceUpload" role="tabpanel">
+                        <div class="form-card case-page">
+                            <h4 class="form-card-title">
+                                <i class="bi bi-upload"></i>
+                                Evidence Upload
+                            </h4>
+                            <p class="text-muted">Evidence Upload area will go here...</p>
+                        </div>
+                    </div>
+
+                    <!-- Evidence Log Tab -->
                     <div class="tab-pane fade" id="evidence" role="tabpanel">
-                        <div class="form-card">
+                        <div class="form-card case-page">
                             <h4 class="form-card-title">
                                 <i class="bi bi-file-earmark-text"></i>
-                                Evidence Management
+                                Evidence Log
                             </h4>
-                            <p class="text-muted">Evidence section content will go here...</p>
+                            <p class="text-muted">Evidence logs section content will go here...</p>
                         </div>
                     </div>
 
                     <!-- Team Tab -->
                     <div class="tab-pane fade" id="team" role="tabpanel">
-                        <div class="form-card">
+                        <div class="form-card case-page">
                             <h4 class="form-card-title">
                                 <i class="bi bi-people"></i>
                                 Team Members
@@ -213,24 +258,35 @@
                     </div>
 
                     <!-- Notes Tab -->
-                    <div class="tab-pane fade" id="notes" role="tabpanel">
-                        <div class="form-card">
+                    <div class="tab-pane fade" id="findings" role="tabpanel">
+                        <div class="form-card case-page">
                             <h4 class="form-card-title">
                                 <i class="bi bi-journal-text"></i>
-                                Case Notes
+                                Case Findings
                             </h4>
-                            <p class="text-muted">Notes section content will go here...</p>
+                            <p class="text-muted">Case findings and reccomendations section content will go here...</p>
                         </div>
                     </div>
 
                     <!-- Timeline Tab -->
                     <div class="tab-pane fade" id="timeline" role="tabpanel">
-                        <div class="form-card">
+                        <div class="form-card case-page">
                             <h4 class="form-card-title">
                                 <i class="bi bi-clock-history"></i>
                                 Case Timeline
                             </h4>
                             <p class="text-muted">Timeline section content will go here...</p>
+                        </div>
+                    </div>
+
+                    <!-- Sign off and generate report -->
+                    <div class="tab-pane fade" id="signoff" role="tabpanel">
+                        <div class="form-card case-page">
+                            <h4 class="form-card-title">
+                                <i class="bi bi-check-square"></i>
+                                Generate Report
+                            </h4>
+                            <p class="text-muted">Sign off and generate report section content will go here...</p>
                         </div>
                     </div>
                 </div>
