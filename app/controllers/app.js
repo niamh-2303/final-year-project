@@ -547,18 +547,24 @@ app.post("/api/create-case-with-team", requireLogin, async (req, res) => {
 });
 
 // Get single case details
+// Get single case details WITH team info
 app.get('/api/case/:id', requireLogin, async (req, res) => {
     const caseId = req.params.id;
 
     try {
+        // Fetch main case data
         const caseResult = await sql`
             SELECT 
-                c.*,
-                cl.first_name || ' ' || cl.last_name AS client_name,
-                inv.first_name || ' ' || inv.last_name AS investigator_name
+                c.case_id,
+                c.case_number,
+                c.case_name,
+                c.description,
+                c.priority,
+                c.status,
+                c.created_at,
+                c.client_id,
+                c.investigator_id AS lead_investigator_id
             FROM cases c
-            LEFT JOIN users cl ON c.client_id = cl.user_id
-            LEFT JOIN users inv ON c.investigator_id = inv.user_id
             WHERE c.case_id = ${caseId}
         `;
 
@@ -566,13 +572,47 @@ app.get('/api/case/:id', requireLogin, async (req, res) => {
             return res.status(404).json({ success: false, msg: "Case not found" });
         }
 
-        res.json({ success: true, case: caseResult[0] });
+        const caseData = caseResult[0];
+
+        // Fetch lead investigator details
+        const leadInvestigator = await sql`
+            SELECT user_id, first_name || ' ' || last_name AS name
+            FROM users
+            WHERE user_id = ${caseData.lead_investigator_id}
+        `;
+
+        // Fetch client details
+        const client = await sql`
+            SELECT user_id, first_name || ' ' || last_name AS name
+            FROM users
+            WHERE user_id = ${caseData.client_id}
+        `;
+
+        // Fetch other investigators in the team
+        const investigators = await sql`
+            SELECT u.user_id, u.first_name || ' ' || u.last_name AS name
+            FROM case_team ct
+            JOIN users u ON u.user_id = ct.investigator_id
+            WHERE ct.case_id = ${caseId}
+            AND ct.investigator_id != ${caseData.lead_investigator_id}
+        `;
+
+        res.json({
+            success: true,
+            case: {
+                ...caseData,
+                lead_investigator: leadInvestigator[0] || null,
+                client: client[0] || null,
+                investigators: investigators
+            }
+        });
 
     } catch (err) {
         console.error("Error fetching case:", err);
         res.status(500).json({ success: false, msg: "Error fetching case" });
     }
 });
+
 
 // Catch-all middleware for any undefined routes
 app.use((req, res) => {

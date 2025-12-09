@@ -78,4 +78,38 @@ function displayCaseData() {
     }
 
     console.log("Case data loaded:", caseData);
+
+    // ==============================
+    // TEAM TAB — Populate Team Members
+    // ==============================
+
+    // Lead Investigator
+    if (caseData.lead_investigator) {
+        document.getElementById("leadInvestigator").textContent =
+            caseData.lead_investigator.name;
+    } else {
+        document.getElementById("leadInvestigator").textContent = "Not assigned";
+    }
+    
+    // Other Investigators
+    const investigatorsContainer = document.getElementById("otherInvestigators");
+    investigatorsContainer.innerHTML = "";
+    if (caseData.investigators && caseData.investigators.length > 0) {
+        caseData.investigators.forEach(inv => {
+            const p = document.createElement("p");
+            p.textContent = inv.name;
+            investigatorsContainer.appendChild(p);
+        });
+    } else {
+        investigatorsContainer.innerHTML = "<p>No investigators assigned.</p>";
+    }
+
+    // Client
+    if (caseData.client) {
+        document.getElementById("clientInfo").textContent =
+            caseData.client.name;
+    } else {
+        document.getElementById("clientInfo").textContent = "No client assigned.";
+    }
+
 }
