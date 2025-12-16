@@ -28,8 +28,7 @@ app.use(cors());
 app.use('/css', express.static(path.join(__dirname, '../views/css')));
 app.use('/js', express.static(path.join(__dirname, '../views/js')));
 app.use('/images', express.static(path.join(__dirname, '../views/images')));
-app.use('/uploads', express.static(path.join(__dirname, 'controllers/uploads')));
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Middleware to check if user is logged in
 var requireLogin = function (req, res, next) {
@@ -638,7 +637,20 @@ const upload = multer({ storage });
 app.post('/api/upload-evidence', upload.single('file'), async (req, res) => {
     try {
         const { case_id, file_hash, evidence_summary, ...exif } = req.body;
-        const file_path = req.file.path;
+        const filename = req.file.filename;
+
+        // Helper function to parse EXIF date format (YYYY:MM:DD HH:MM:SS) to ISO
+        const parseExifDate = (dateStr) => {
+            if (!dateStr || typeof dateStr !== 'string') return null;
+            try {
+                // EXIF format: "2025:09:29 13:50:51"
+                const cleaned = dateStr.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3');
+                const date = new Date(cleaned);
+                return isNaN(date.getTime()) ? null : date.toISOString();
+            } catch (e) {
+                return null;
+            }
+        };
 
         const result = await sql`
             INSERT INTO evidence (
@@ -667,13 +679,13 @@ app.post('/api/upload-evidence', upload.single('file'), async (req, res) => {
             ) VALUES (
                 ${case_id},
                 ${req.file.originalname},
-                ${file_path},
+                ${filename},
                 ${file_hash},
                 ${evidence_summary || null},
                 ${exif.Make || null},
                 ${exif.Model || null},
-                ${exif.DateTimeOriginal || null},
-                ${exif.DateTimeDigitized || null},
+                ${parseExifDate(exif.DateTimeOriginal)},
+                ${parseExifDate(exif.DateTimeDigitized)},
                 ${exif.Orientation || null},
                 ${exif.XResolution || null},
                 ${exif.YResolution || null},
@@ -682,7 +694,7 @@ app.post('/api/upload-evidence', upload.single('file'), async (req, res) => {
                 ${exif.Copyright || null},
                 ${exif.ExposureTime || null},
                 ${exif.FNumber || null},
-                ${exif.ISO || null},
+                ${exif.ISOSpeedRatings || exif.ISO || null},
                 ${exif.FocalLength || null},
                 ${exif.Flash || null},
                 ${exif.WhiteBalance || null},
@@ -695,7 +707,7 @@ app.post('/api/upload-evidence', upload.single('file'), async (req, res) => {
         res.json({ success: true, evidence: result[0] });
 
     } catch (err) {
-        console.error(err);
+        console.error('Error uploading evidence:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 });

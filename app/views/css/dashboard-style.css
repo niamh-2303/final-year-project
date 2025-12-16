@@ -705,5 +705,25 @@ textarea.form-control {
     border-color: var(--primary-blue);
 }
 
+/*evidence logs display */
+#evidenceLogContainer .card {
+    border: 1px solid #ddd;
+}
 
+#evidenceLogContainer .card-header {
+    background-color: #f8f9fa;
+}
+
+#evidenceLogContainer code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    word-break: break-all;
+}
+
+#evidenceLogContainer img {
+    max-height: 300px;
+    object-fit: contain;
+}
 
