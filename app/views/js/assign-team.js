@@ -23,6 +23,13 @@ window.addEventListener("DOMContentLoaded", () => {
 const investigatorSearchInput = document.getElementById("investigatorSearch");
 const investigatorResults = document.getElementById("investigatorResults");
 
+// Disable Enter key submission
+investigatorSearchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+    }
+});
+
 investigatorSearchInput.addEventListener("input", async () => {
     const query = investigatorSearchInput.value.trim();
     if (!query) {
@@ -33,6 +40,16 @@ investigatorSearchInput.addEventListener("input", async () => {
     try {
         const res = await fetch(`/api/search-investigator?q=${encodeURIComponent(query)}`);
         const investigators = await res.json();
+
+        // Show "no results" message if empty
+        if (investigators.length === 0) {
+            investigatorResults.innerHTML = `
+                <div class="list-group-item text-muted">
+                    No one with this name is available
+                </div>
+            `;
+            return;
+        }
 
         investigatorResults.innerHTML = investigators.map(inv => `
             <button type="button" class="list-group-item list-group-item-action" 

@@ -697,7 +697,13 @@ textarea.form-control {
     color: #555;
 }
 
-
+/*changing button hover colour to overwrite bootstrap in case area "back to dashboard" */
+.btn-blue-back:hover,
+.btn-blue-back:focus {
+    color: #fff;
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+}
 
 
 

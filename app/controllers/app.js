@@ -637,7 +637,7 @@ const upload = multer({ storage });
 
 app.post('/api/upload-evidence', upload.single('file'), async (req, res) => {
     try {
-        const { case_id, file_hash, ...exif } = req.body;
+        const { case_id, file_hash, evidence_summary, ...exif } = req.body;
         const file_path = req.file.path;
 
         const result = await sql`
@@ -646,6 +646,7 @@ app.post('/api/upload-evidence', upload.single('file'), async (req, res) => {
                 evidence_name,
                 file_path,
                 file_hash,
+                description,
                 make, model,
                 datetime_original,
                 datetime_digitized,
@@ -668,6 +669,7 @@ app.post('/api/upload-evidence', upload.single('file'), async (req, res) => {
                 ${req.file.originalname},
                 ${file_path},
                 ${file_hash},
+                ${evidence_summary || null},
                 ${exif.Make || null},
                 ${exif.Model || null},
                 ${exif.DateTimeOriginal || null},
@@ -716,7 +718,6 @@ app.get('/api/get-evidence', requireLogin, async (req, res) => {
         res.status(500).json({ success: false, msg: "Server error fetching evidence" });
     }
 });
-
 
 
 

@@ -41,8 +41,19 @@ const clientSearchInput = document.getElementById("clientSearch");
 const clientResults = document.getElementById("clientResults");
 const clientIDInput = document.getElementById("clientID");
 
+// Disable Enter key submission
+clientSearchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+    }
+});
+
 clientSearchInput.addEventListener("input", async () => {
     const query = clientSearchInput.value.trim();
+    
+    // Clear client ID when user types
+    clientIDInput.value = "";
+    
     if (!query) {
         clientResults.innerHTML = "";
         return;
@@ -51,6 +62,16 @@ clientSearchInput.addEventListener("input", async () => {
     try {
         const res = await fetch(`/api/search-client?q=${encodeURIComponent(query)}`);
         const clients = await res.json();
+
+        // Show "no results" message if empty
+        if (clients.length === 0) {
+            clientResults.innerHTML = `
+                <div class="list-group-item text-muted">
+                    No one with this name is available
+                </div>
+            `;
+            return;
+        }
 
         clientResults.innerHTML = clients.map(c => `
             <button type="button" class="list-group-item list-group-item-action" data-id="${c.id}">

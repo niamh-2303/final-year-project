@@ -166,90 +166,100 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Load evidence log on page load
     loadEvidenceLog(CURRENT_CASE_ID);
 
-    // ------------------------------
-    // File Selection
-    // ------------------------------
-    if (fileInput) {
-        fileInput.addEventListener('change', async (event) => {
-            selectedFile = event.target.files[0];
+// ------------------------------
+// File Selection
+// ------------------------------
+if (fileInput) {
+    fileInput.addEventListener('change', async (event) => {
+        selectedFile = event.target.files[0];
 
-            if (!selectedFile) return;
+        if (!selectedFile) return;
 
-            resultsSection.classList.remove('hidden');
-            clearButton.style.display = 'inline-block';
+        resultsSection.classList.remove('hidden');
+        clearButton.style.display = 'inline-block';
 
-            // Calculate hash
-            hashOutput.textContent = `Calculating hash for "${selectedFile.name}"...`;
-            fileHash = await calculateSHA256(selectedFile);
-            hashOutput.textContent = fileHash;
+        // Calculate hash
+        hashOutput.textContent = `Calculating hash for "${selectedFile.name}"...`;
+        fileHash = await calculateSHA256(selectedFile);
+        hashOutput.textContent = fileHash;
 
-            // Extract metadata
-            extractedMetadata = await extractMetadata(selectedFile);
-            displayMetadata(extractedMetadata, selectedFile);
-        });
-    }
+        // Extract metadata
+        extractedMetadata = await extractMetadata(selectedFile);
+        displayMetadata(extractedMetadata, selectedFile);
+    });
+}
 
-    // ------------------------------
-    // Clear file selection
-    // ------------------------------
-    if (clearButton) {
-        clearButton.addEventListener('click', () => {
-            fileInput.value = '';
-            resultsSection.classList.add('hidden');
-            selectedFile = null;
-            extractedMetadata = null;
-            fileHash = null;
-        });
-    }
+// ------------------------------
+// Clear file selection
+// ------------------------------
+if (clearButton) {
+    clearButton.addEventListener('click', () => {
+        fileInput.value = '';
+        resultsSection.classList.add('hidden');
+        selectedFile = null;
+        extractedMetadata = null;
+        fileHash = null;
+        document.getElementById('evidenceSummary').value = ''; // Clear summary
+    });
+}
 
-    // ------------------------------
-    // Upload Evidence
-    // ------------------------------
-    if (submitButton) {
-        submitButton.addEventListener('click', async () => {
-            if (!selectedFile) {
-                alert('Please select a file first.');
-                return;
+// ------------------------------
+// Upload Evidence
+// ------------------------------
+if (submitButton) {
+    submitButton.addEventListener('click', async () => {
+        if (!selectedFile) {
+            alert('Please select a file first.');
+            return;
+        }
+
+        const evidenceSummary = document.getElementById('evidenceSummary').value.trim();
+        
+        if (!evidenceSummary) {
+            alert('Please provide a summary of the evidence.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('case_id', CURRENT_CASE_ID);
+        formData.append('file_hash', fileHash);
+        formData.append('evidence_summary', evidenceSummary); // Add summary
+
+        // Add extracted metadata
+        if (extractedMetadata) {
+            Object.keys(extractedMetadata).forEach(key => {
+                formData.append(key, extractedMetadata[key]);
+            });
+        }
+
+        try {
+            const response = await fetch('/api/upload-evidence', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if (response.ok && result.success) {
+                alert('Evidence uploaded successfully!');
+                // Clear selection
+                fileInput.value = '';
+                resultsSection.classList.add('hidden');
+                selectedFile = null;
+                extractedMetadata = null;
+                fileHash = null;
+                document.getElementById('evidenceSummary').value = ''; // Clear summary
+
+                // Refresh evidence log
+                loadEvidenceLog(CURRENT_CASE_ID);
+            } else {
+                alert('Upload failed: ' + (result.message || 'Unknown error'));
             }
-
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('case_id', CURRENT_CASE_ID);
-            formData.append('file_hash', fileHash);
-
-            // Add extracted metadata
-            if (extractedMetadata) {
-                Object.keys(extractedMetadata).forEach(key => {
-                    formData.append(key, extractedMetadata[key]);
-                });
-            }
-
-            try {
-                const response = await fetch('/api/upload-evidence', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-                if (response.ok && result.success) {
-                    alert('Evidence uploaded successfully!');
-                    // Clear selection
-                    fileInput.value = '';
-                    resultsSection.classList.add('hidden');
-                    selectedFile = null;
-                    extractedMetadata = null;
-                    fileHash = null;
-
-                    // Refresh evidence log
-                    loadEvidenceLog(CURRENT_CASE_ID);
-                } else {
-                    alert('Upload failed: ' + (result.message || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error uploading evidence:', error);
-                alert('Upload failed due to a network/server error.');
-            }
-        });
-    }
+        } catch (error) {
+            console.error('Error uploading evidence:', error);
+            alert('Upload failed due to a network/server error.');
+        }
+    });
+}
 });
 

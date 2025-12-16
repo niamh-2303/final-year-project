@@ -87,10 +87,15 @@
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div>
                             <div class="breadcrumb-nav">
-                                <i class="bi bi-house-door"></i>
-                                <span>Home</span>
+                                <a href="dashboard.html" class="breadcrumb-link">
+                                    <i class="bi bi-house-door"></i>
+                                    <span>Home</span>
+                                </a>
                                 <i class="bi bi-chevron-right"></i>
-                                <span>Cases</span>
+
+                                <a href="dashboard.html" class="breadcrumb-link">
+                                    <span>Cases</span>
+                                </a>
                                 <i class="bi bi-chevron-right"></i>
                                 <span id="breadcrumbCaseNumber">Loading...</span>
                             </div>
@@ -104,7 +109,7 @@
                             </p>
                         </div>
                         <div class="header-actions">
-                            <button class="btn btn-outline-secondary" onclick="window.location.href='dashboard.html'">
+                            <button class="btn btn-outline-secondary btn-blue-back" onclick="window.location.href='dashboard.html'">
                                 <i class="bi bi-arrow-left"></i>
                                 <span>Back to Dashboard</span>
                             </button>
@@ -260,6 +265,17 @@
                                             </tr>
                                         </tbody>
                                     </table>
+                                </div>
+
+                                <div class="section mt-3">
+                                    <label for="evidenceSummary" class="form-label">
+                                        <h5>Evidence Summary</h5>
+                                    </label>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="evidenceSummary" 
+                                        rows="4" 
+                                        placeholder="Enter a brief description of this evidence..."></textarea>
                                 </div>
 
                                 <button id="submitEvidenceButton" class="btn btn-success mt-3">Upload Evidence</button>

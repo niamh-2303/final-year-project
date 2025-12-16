@@ -195,15 +195,35 @@
                             </h4>
                             
                             <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Lead Investigator</label>
-                                <input type="text" id="investigator" class="form-control" readonly>
+                                <div class="col-md-6">
+                                    <label class="form-label">Lead Investigator</label>
+                                    <input type="text" id="investigator" class="form-control" readonly>
+                                </div>
                             </div>
 
                             <div class="col-12">
                                 <label for="description" class="form-label">Type of case</label>
-                                <textarea class="form-control" id="description" rows="1" placeholder="Enter the type of case..."></textarea>
-                            </div>
+                                <select class="form-select" id="description">
+                                    <option value="" selected>Select case type...</option>
+                                    <option value="Data Breach Investigation">Data Breach Investigation</option>
+                                    <option value="Intellectual Property Theft">Intellectual Property Theft</option>
+                                    <option value="Employee Misconduct">Employee Misconduct</option>
+                                    <option value="Fraud Investigation">Fraud Investigation</option>
+                                    <option value="Cybercrime Investigation">Cybercrime Investigation</option>
+                                    <option value="Malware Analysis">Malware Analysis</option>
+                                    <option value="Email Investigation">Email Investigation</option>
+                                    <option value="Mobile Device Forensics">Mobile Device Forensics</option>
+                                    <option value="Network Forensics">Network Forensics</option>
+                                    <option value="Cloud Forensics">Cloud Forensics</option>
+                                    <option value="Incident Response">Incident Response</option>
+                                    <option value="Data Recovery">Data Recovery</option>
+                                    <option value="Social Media Investigation">Social Media Investigation</option>
+                                    <option value="Cryptocurrency Investigation">Cryptocurrency Investigation</option>
+                                    <option value="Insider Threat Investigation">Insider Threat Investigation</option>
+                                    <option value="Ransomware Investigation">Ransomware Investigation</option>
+                                    <option value="Legal/eDiscovery">Legal/eDiscovery</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
                         </div>
 
