@@ -100,6 +100,14 @@ app.get('/case-area.html', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/case-area.html'));
 });
 
+app.get('/settings', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/settings.html'));
+});
+
+app.get('/settings.html', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/settings.html'));
+});
+
 // ===== AUTHENTICATION ENDPOINTS =====
 
 // Register new account
