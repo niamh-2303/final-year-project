@@ -190,7 +190,11 @@
                                     <i class="bi bi-journal-text"></i> Findings
                                 </button>
                             </li>
-                            
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tools-tab" data-bs-toggle="tab" data-bs-target="#tools" type="button" role="tab" aria-controls="tools" aria-selected="false" aria-label="tools-tab">
+                                    <i class="bi bi-tools"></i> Tools Used
+                                </button>
+                            </li>
                             
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="signoff-tab" data-bs-toggle="tab" data-bs-target="#signoff" type="button" role="tab" aria-controls="signoff" aria-selected="false" aria-label="signoff-tab">
@@ -349,17 +353,30 @@
                             <p class="text-muted">Timeline section content will go here...</p>
                         </div>
                     </div>
+                    <div class="tab-pane fade" id="tools" role="tabpanel">
 
-                    <!-- Sign off and generate report -->
-                    <div class="tab-pane fade" id="signoff" role="tabpanel">
-                        <div class="form-card case-page">
-                            <h4 class="form-card-title">
-                                <i class="bi bi-check-square"></i>
-                                Generate Report
-                            </h4>
-                            <p class="text-muted">Sign off and generate report section content will go here...</p>
-                        </div>
+                    <!-- Tools used Tab -->  
+                    <div class="form-card case-page">
+                        <h4 class="form-card-title">
+                            <i class="bi bi-tools"></i>
+                            Tools Used
+                        </h4>
+                        <p class="text-muted">
+                            Tools, software, and forensic utilities used during this investigation will be listed here...
+                        </p>
                     </div>
+                </div>
+
+                <!-- Sign off and generate report -->
+                <div class="tab-pane fade" id="signoff" role="tabpanel">
+                    <div class="form-card case-page">
+                        <h4 class="form-card-title">
+                             <i class="bi bi-check-square"></i>
+                             Generate Report
+                        </h4>
+                        <p class="text-muted">Sign off and generate report section content will go here...</p>
+                    </div>
+                 </div>
                 </div>
 
             </main>
