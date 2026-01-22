@@ -446,7 +446,6 @@ app.get('/api/my-cases', requireLogin, async (req, res) => {
     try {
         const investigatorEmail = req.session.user;
 
-        // Get investigator's user_id
         const investigator = await sql`
             SELECT user_id 
             FROM users 
@@ -459,7 +458,7 @@ app.get('/api/my-cases', requireLogin, async (req, res) => {
 
         const investigatorID = investigator[0].user_id;
 
-        // Fetch cases assigned to this investigator
+        // Fetch cases assigned to this investigator (exclude deleted)
         const cases = await sql`
             SELECT 
                 c.case_id,
@@ -469,10 +468,12 @@ app.get('/api/my-cases', requireLogin, async (req, res) => {
                 c.priority,
                 c.status,
                 c.created_at,
+                c.is_deleted,
                 cl.first_name || ' ' || cl.last_name AS client_name
             FROM cases c
             LEFT JOIN users cl ON c.client_id = cl.user_id
             WHERE c.investigator_id = ${investigatorID}
+            AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
             ORDER BY c.created_at DESC
         `;
 
@@ -743,6 +744,123 @@ app.get('/api/get-evidence', requireLogin, async (req, res) => {
     } catch (err) {
         console.error("Error fetching evidence:", err);
         res.status(500).json({ success: false, msg: "Server error fetching evidence" });
+    }
+});
+
+// Soft delete a case (move to deleted cases)
+app.post('/api/cases/:id/delete', requireLogin, async (req, res) => {
+    const caseId = req.params.id;
+    const { is_deleted, deleted_at } = req.body;
+
+    try {
+        await sql`
+            UPDATE cases
+            SET is_deleted = ${is_deleted},
+                deleted_at = ${deleted_at},
+                status = 'closed'  -- <--- This forces the status to Closed
+            WHERE case_id = ${caseId}
+        `;
+
+        res.json({ success: true, msg: "Case moved to deleted cases and marked as Closed" });
+
+    } catch (err) {
+        console.error("Error deleting case:", err);
+        res.status(500).json({ success: false, msg: "Error deleting case" });
+    }
+});
+
+// Get deleted cases for current user
+app.get('/api/my-cases/deleted', requireLogin, async (req, res) => {
+    try {
+        const investigatorEmail = req.session.user;
+
+        const investigator = await sql`
+            SELECT user_id 
+            FROM users 
+            WHERE email = ${investigatorEmail}
+        `;
+
+        if (investigator.length === 0) {
+            return res.status(404).json({ msg: "User not found" });
+        }
+
+        const investigatorID = investigator[0].user_id;
+
+        // Fetch only deleted cases
+        const cases = await sql`
+            SELECT 
+                c.case_id,
+                c.case_number,
+                c.case_name,
+                c.description,
+                c.priority,
+                c.status,
+                c.created_at,
+                c.deleted_at,
+                cl.first_name || ' ' || cl.last_name AS client_name
+            FROM cases c
+            LEFT JOIN users cl ON c.client_id = cl.user_id
+            WHERE c.investigator_id = ${investigatorID}
+            AND c.is_deleted = TRUE
+            ORDER BY c.deleted_at DESC
+        `;
+
+        res.json({ success: true, cases: cases });
+
+    } catch (err) {
+        console.error("Error fetching deleted cases:", err);
+        res.status(500).json({ success: false, msg: "Error fetching deleted cases" });
+    }
+});
+
+// Restore a deleted case
+app.post('/api/cases/:id/restore', requireLogin, async (req, res) => {
+    const caseId = req.params.id;
+
+    try {
+        await sql`
+            UPDATE cases
+            SET is_deleted = FALSE,
+                deleted_at = NULL,
+                status = 'active'  -- <--- This makes the case active again
+            WHERE case_id = ${caseId}
+        `;
+
+        res.json({ success: true, msg: "Case restored successfully and reopened" });
+
+    } catch (err) {
+        console.error("Error restoring case:", err);
+        res.status(500).json({ success: false, msg: "Error restoring case" });
+    }
+});
+
+// Permanently delete a case
+app.delete('/api/cases/:id/permanent-delete', requireLogin, async (req, res) => {
+    const caseId = req.params.id;
+
+    try {
+        // Delete related records first (evidence, case_team, etc.)
+        await sql`
+            DELETE FROM evidence
+            WHERE case_id = ${caseId}
+        `;
+
+        await sql`
+            DELETE FROM case_team
+            WHERE case_id = ${caseId}
+        `;
+
+        // Then delete the case itself
+        await sql`
+            DELETE FROM cases
+            WHERE case_id = ${caseId}
+        `;
+
+        res.json({ success: true, msg: "Case permanently deleted" });
+
+    } catch (err) {
+        console.error("Error permanently deleting case:", err);
+        res.status(500).json({ success: false, msg: "Error permanently deleting case" });
     }
 });
 
