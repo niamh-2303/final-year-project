@@ -743,3 +743,35 @@ textarea.form-control {
     object-fit: contain;
 }
 
+/* ==================== RETENTION NOTICE ==================== */
+.retention-notice {
+    background-color: #fee;
+    border: 1px solid #fcc;
+    color: #c33;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: calc(100% - 80px);
+    margin-right: 20px;
+    margin-left: 20px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.retention-notice i {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+    min-width: 24px;
+}
+
+.retention-notice strong {
+    color: #a00;
+}
+
+.retention-notice div {
+    flex: 1;
+    min-width: 0;
+}
+
