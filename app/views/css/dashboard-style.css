@@ -377,39 +377,55 @@ body {
 /* ==================== RESPONSIVE ==================== */
 
 @media (max-width: 768px) {
+    /* 1. Shrink the sidebar width instead of hiding it */
     .sidebar {
         position: fixed;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 80px !important; /* Force the narrow width */
+        flex: 0 0 80px !important;
         z-index: 1000;
+        overflow-x: hidden;
+        padding: 15px 0;
     }
 
-    .sidebar.show {
-        transform: translateX(0);
+    /* 2. Hide all the text/labels */
+    .logo-text, 
+    .sidebar-heading, 
+    .profile-details, 
+    .nav-link span {
+        display: none !important;
     }
 
-    .main-content {
+    /* 3. Center the icons so they look clean */
+    .sidebar-logo,
+    .nav-item,
+    .sidebar-profile {
+        display: flex;
+        justify-content: center;
+        width: 100%;
         margin-left: 0;
+        margin-right: 0;
     }
 
-    .content-header {
-        padding: 20px;
+    .nav-link {
+        text-align: center;
+        width: 100%;
+        font-size: 1.4rem; /* Make icons bigger for fingers to tap */
+        padding: 12px 0;
     }
 
-    .page-title {
-        font-size: 24px;
+    /* 4. Push the main content over so it doesn't go under the sidebar */
+    .main-content {
+        margin-left: 80px !important;
+        width: calc(100% - 80px);
     }
 
-    .header-actions {
-        flex-wrap: wrap;
-    }
-
-    .btn-new-case span {
-        display: none;
-    }
-
-    .cases-section {
-        padding: 32px 20px;
+    /* 5. Scale down the logo image to fit the 80px space */
+    .sidebar-logo-img {
+        width: 40px;
+        height: auto;
     }
 }
 

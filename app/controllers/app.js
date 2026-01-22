@@ -108,6 +108,13 @@ app.get('/settings.html', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/settings.html'));
 });
 
+app.get('/deleted-cases', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/deleted-cases.html'));
+});
+
+app.get('/deleted-cases.html', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/deleted-cases.html'));
+});
 // ===== AUTHENTICATION ENDPOINTS =====
 
 // Register new account

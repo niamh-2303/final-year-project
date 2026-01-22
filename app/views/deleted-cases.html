@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Dashboard - DFIR</title>
+    <title>DFIR Dashboard</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -21,7 +21,7 @@
                 <!-- Logo Section -->
                 <div class="sidebar-logo">
                     <div class="logo-wrapper">
-                        <a href="client-dashboard.html">
+                        <a href="dashboard.html">
                             <img src="images/logo.webp" alt="Logo" class="sidebar-logo-img">
                         </a>
                     </div>
@@ -36,14 +36,20 @@
                     <h6 class="sidebar-heading">MAIN</h6>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link active" href="#">
+                            <a class="nav-link" href="dashboard.html">
                                 <i class="bi bi-speedometer2"></i>
                                 <span>Dashboard</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="#">
-                                <i class="bi bi-file-earmark-text"></i>
+                                <i class="bi bi-folder"></i>
+                                <span>Archive</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-graph-up"></i>
                                 <span>Reports</span>
                             </a>
                         </li>
@@ -55,19 +61,13 @@
                     <h6 class="sidebar-heading">SHORTCUTS</h6>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i class="bi bi-archive"></i>
-                                <span>Archive</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link" href="settings.html">
                                 <i class="bi bi-gear"></i>
                                 <span>Settings</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="deleted-cases.html">
+                         <li class="nav-item">
+                            <a class="nav-link active" href="deleted-cases.html">
                                 <i class="bi bi-folder-minus"></i>
                                 <span>Deleted Cases</span>
                             </a>
@@ -82,7 +82,7 @@
                     </div>
                     <div class="profile-details">
                         <strong id="sidebarUserName">Loading...</strong>
-                        <small id="sidebarUserRole">Client</small>
+                        <small id="sidebarUserRole">Investigator</small>
                     </div>
                 </div>
             </nav>
@@ -93,18 +93,21 @@
                 <!-- Top Header -->
                 <div class="content-header">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
+                         <div>
                             <div class="breadcrumb-nav">
-                                <i class="bi bi-house-door"></i>
-                                <span>Home</span>
+                                <a href="dashboard.html" class="breadcrumb-link">
+                                    <i class="bi bi-house-door"></i>
+                                    <span>Home</span>
+                                </a>
+                                <i class="bi bi-chevron-right"></i>
+                                <span>Deleted Cases</span>
                             </div>
-                            <h1 class="page-title">My Investigation Cases</h1>
                         </div>
                         <div class="header-actions">
                             
                             <!-- Profile Dropdown -->
                             <div class="dropdown">
-                                <button class="btn btn-profile-header" id="profileButton" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-profile-header" id="profileButton" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="User Profile">
                                     <i class="bi bi-person-circle"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end profile-dropdown-menu">
@@ -125,69 +128,13 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Tabs Navigation -->
-                    <ul class="nav nav-tabs case-tabs" id="caseTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">
-                                Active
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
-                                All
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab">
-                                Requests
-                            </button>
-                        </li>
-                    </ul>
                 </div>
 
-                <!-- Tab Content -->
-                <div class="tab-content" id="caseTabsContent">
+                
+
                     
-                    <!-- Active Cases Tab -->
-                    <div class="tab-pane fade show active" id="active" role="tabpanel">
-                        <div class="cases-section">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">
-                                    <i class="bi bi-folder2-open"></i>
-                                </div>
-                                <h3>No Active Investigations</h3>
-                                <p>You currently have no active investigation cases. Request a new investigation to get started.</p>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- All Cases Tab -->
-                    <div class="tab-pane fade" id="all" role="tabpanel">
-                        <div class="cases-section">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">
-                                    <i class="bi bi-inbox"></i>
-                                </div>
-                                <h3>No Cases Yet</h3>
-                                <p>All your investigation requests and cases will appear here.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Completed Cases Tab -->
-                    <div class="tab-pane fade" id="completed" role="tabpanel">
-                        <div class="cases-section">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">
-                                    <i class="bi bi-check-circle"></i>
-                                </div>
-                                <h3>No Completed Cases</h3>
-                                <p>Completed investigations and their reports will appear here.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    
 
             </main>
 
@@ -198,6 +145,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/logout.js"></script>
     <script src="js/profile.js"></script>
+    
     
 </body>
 </html>
