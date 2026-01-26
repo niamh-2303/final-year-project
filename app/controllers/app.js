@@ -7,6 +7,7 @@ const session = require('express-session');
 const validator = require('validator');
 const bodyParser = require('body-parser');
 const multer = require('multer');
+const fs = require('fs');
 
 
 const app = express();
@@ -30,7 +31,8 @@ app.use('/js', express.static(path.join(__dirname, '../views/js')));
 app.use('/images', express.static(path.join(__dirname, '../views/images')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Middleware to check if user is logged in
+// ======Middleware===========
+//  to check if user is logged in
 var requireLogin = function (req, res, next) {
     console.log('Checking if user is logged in');
     if (req.session.user == null) {
@@ -41,6 +43,41 @@ var requireLogin = function (req, res, next) {
         next();
     }
 };
+
+// Role-based access control 
+const requireRole = (...allowedRoles) =>{
+    return (req, res, next) =>{
+        if (!req.session.user){
+            console.log('No user session - redirecting to login');
+            return res.redirect('/');
+        }
+
+        const userRole = req.session.role;
+
+        if (!allowedRoles.includes(userRole)) {
+            console.log(`Access denied: User role '${userRole}' not in allowed roles [${allowedRoles.join(', ')}]`);
+            
+            // If it's an API request, return JSON
+            if (req.path.startsWith('/api/')) {
+                return res.status(403).json({ 
+                    success: false, 
+                    msg: 'Access denied: You do not have permission to access this resource' 
+                });
+            }
+            
+            // Otherwise, show the nice error page
+            return res.redirect('/access-denied.html');
+        }
+        
+        console.log(`Access granted: User role '${userRole}' is authorized`);
+        next();
+    };
+};
+
+//middleware for common roles
+const requireInvestigator = requireRole('investigator');
+const requireClient = requireRole('client');
+const requireAdmin = requireRole('admin');
 
 // ===== PUBLIC ROUTES (No login required) =====
 app.get('/', (req, res) => {
@@ -59,62 +96,77 @@ app.get('/register.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../views/register.html'));
 });
 
-// ===== PROTECTED ROUTES (Login required) =====
-app.get('/dashboard', requireLogin, (req, res) => {
+// Access denied page (public - anyone can see it)
+app.get('/access-denied', (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/access-denied.html'));
+});
+
+app.get('/access-denied.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/access-denied.html'));
+});
+
+// ===== Investigator Only Routes =====
+app.get('/dashboard', requireInvestigator, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/dashboard.html'));
 });
 
-app.get('/dashboard.html', requireLogin, (req, res) => {
+app.get('/dashboard.html', requireInvestigator, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/dashboard.html'));
 });
 
-app.get('/create-case', requireLogin, (req, res) => {
+app.get('/create-case', requireInvestigator, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/create-case.html'));
 });
 
-app.get('/create-case.html', requireLogin, (req, res) => {
+app.get('/create-case.html', requireInvestigator, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/create-case.html'));
 });
 
-app.get('/client-dashboard', requireLogin, (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/client-dashboard.html'));
-});
-
-app.get('/client-dashboard.html', requireLogin, (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/client-dashboard.html'));
-});
-
-app.get('/assign-team', requireLogin, (req, res) => {
+app.get('/assign-team', requireInvestigator, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/assign-team.html'));
 });
 
-app.get('/assign-team.html', requireLogin, (req, res) => {
+app.get('/assign-team.html', requireInvestigator, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/assign-team.html'));
 });
 
-app.get('/case-area', requireLogin, (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/case-area.html'));
-});
-
-app.get('/case-area.html', requireLogin, (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/case-area.html'));
-});
-
-app.get('/settings', requireLogin, (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/settings.html'));
-});
-
-app.get('/settings.html', requireLogin, (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/settings.html'));
-});
-
-app.get('/deleted-cases', requireLogin, (req, res) => {
+app.get('/deleted-cases', requireInvestigator, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/deleted-cases.html'));
 });
 
-app.get('/deleted-cases.html', requireLogin, (req, res) => {
+app.get('/deleted-cases.html', requireInvestigator, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/deleted-cases.html'));
 });
+
+//================ CLIENT-ONLY ROUTES ====================
+
+app.get('/client-dashboard', requireClient, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/client-dashboard.html'));
+});
+
+app.get('/client-dashboard.html', requireClient, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/client-dashboard.html'));
+});
+
+//================== SHARED ROUTES (Multiple roles can access) =======
+
+app.get('/case-area', requireRole('investigator', 'client'), (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/case-area.html'));
+});
+
+app.get('/case-area.html', requireRole('investigator', 'client'), (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/case-area.html'));
+});
+
+app.get('/settings', requireRole('investigator', 'client'), (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/settings.html'));
+});
+
+app.get('/settings.html', requireRole('investigator', 'client'), (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/settings.html'));
+});
+
+
 // ===== AUTHENTICATION ENDPOINTS =====
 
 // Register new account
@@ -122,11 +174,17 @@ app.post('/register-account', async (req, res) => {
     const { fname, lname, role, email, psw } = req.body;
     const pswrepeat = req.body['psw-repeat'];
     
-    console.log("Register attempt - email: " + email);
+    console.log("Register attempt - email: " + email + ", role: " + role);
 
     // Validate required fields
     if (!fname || !lname || !role || !email || !psw || !pswrepeat) {
         return res.status(400).json({ msg: 'All fields are required' });
+    }
+
+    // Validate role
+    const validRoles = ['investigator', 'client', 'admin'];
+    if (!validRoles.includes(role)) {
+        return res.status(400).json({ msg: 'Invalid role specified' });
     }
 
     // Check if passwords match
@@ -145,7 +203,7 @@ app.post('/register-account', async (req, res) => {
             VALUES (${fname}, ${lname}, ${role}, ${email}, ${hash})
         `;
         
-        console.log("User registered successfully");
+        console.log("User registered successfully with role: " + role);
         
         // Set session for auto-login after registration
         req.session.user = email;
@@ -227,14 +285,10 @@ app.get('/logout', (req, res) => {
 });
 
 // Change password
-app.post('/change-password', async (req, res) => {
+app.post('/change-password', requireLogin, async (req, res) => {
     const { currentpwd, newpwd, repeatpwd } = req.body;
     
     console.log("Change password attempt for user: " + req.session.user);
-
-    if (!req.session.user) {
-        return res.status(401).json({ msg: "Not logged in" });
-    }
 
     if (!currentpwd || !newpwd || !repeatpwd) {
         return res.status(400).json({ msg: "All fields are required" });
@@ -285,7 +339,7 @@ app.post('/change-password', async (req, res) => {
 });
 
 // Delete account
-app.delete('/delete-account', async (req, res) => {
+app.delete('/delete-account', requireLogin, async (req, res) => {
     const email = req.session.user;
 
     if (!email) {
@@ -314,7 +368,7 @@ app.delete('/delete-account', async (req, res) => {
 });
 
 // Get current user info
-app.get('/get-user-info', async (req, res) => {
+app.get('/get-user-info', requireLogin, async (req, res) => {
     if (!req.session.user) {
         return res.status(401).json({ success: false, msg: 'Not logged in' });
     }
@@ -345,10 +399,10 @@ app.get('/get-user-info', async (req, res) => {
     }
 });
 
-// ===== CASE MANAGEMENT ENDPOINTS =====
+// ===== CASE MANAGEMENT ENDPOINTS (INVESTIGATOR ONLY) =====
 
 // Generate next case number
-app.get('/api/next-case-number', requireLogin, async (req, res) => {
+app.get('/api/next-case-number', requireInvestigator, async (req, res) => {
     try {
         const rows = await sql`
             SELECT case_number 
@@ -376,7 +430,7 @@ app.get('/api/next-case-number', requireLogin, async (req, res) => {
 });
 
 // Search clients
-app.get("/api/search-client", requireLogin, async (req, res) => {
+app.get("/api/search-client", requireInvestigator, async (req, res) => {
     const q = req.query.q || "";
 
     try {
@@ -396,7 +450,7 @@ app.get("/api/search-client", requireLogin, async (req, res) => {
 });
 
 // Create case
-app.post("/api/create-case", requireLogin, async (req, res) => {
+app.post("/api/create-case", requireInvestigator, async (req, res) => {
     const { caseNumber, caseName, caseType, clientID, priority, status } = req.body;
 
     console.log("Received case data:", { caseNumber, caseName, caseType, clientID, priority, status });
@@ -441,41 +495,64 @@ app.post("/api/create-case", requireLogin, async (req, res) => {
     }
 });
 
-// Get cases for current user (investigator)
-app.get('/api/my-cases', requireLogin, async (req, res) => {
+// Get cases for current user (INVESTIGATOR - sees assigned cases, CLIENT - sees their cases)
+app.get('/api/my-cases', requireRole('investigator', 'client'), async (req, res) => {
     try {
-        const investigatorEmail = req.session.user;
+        const userEmail = req.session.user;
+        const userRole = req.session.role;
 
-        const investigator = await sql`
+        //Get user ID
+        const user = await sql`
             SELECT user_id 
             FROM users 
-            WHERE email = ${investigatorEmail}
+            WHERE email = ${userEmail}
         `;
 
-        if (investigator.length === 0) {
+        if (user.length === 0) {
             return res.status(404).json({ msg: "User not found" });
         }
 
-        const investigatorID = investigator[0].user_id;
+        const userID = user[0].user_id;
+        let cases;
 
-        // Fetch cases assigned to this investigator (exclude deleted)
-        const cases = await sql`
-            SELECT 
-                c.case_id,
-                c.case_number,
-                c.case_name,
-                c.description,
-                c.priority,
-                c.status,
-                c.created_at,
-                c.is_deleted,
-                cl.first_name || ' ' || cl.last_name AS client_name
-            FROM cases c
-            LEFT JOIN users cl ON c.client_id = cl.user_id
-            WHERE c.investigator_id = ${investigatorID}
-            AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
-            ORDER BY c.created_at DESC
-        `;
+        if (userRole === 'investigator') {
+            // Investigators see cases they're assigned to (exclude deleted)
+            cases = await sql`
+                SELECT 
+                    c.case_id,
+                    c.case_number,
+                    c.case_name,
+                    c.description,
+                    c.priority,
+                    c.status,
+                    c.created_at,
+                    c.is_deleted,
+                    cl.first_name || ' ' || cl.last_name AS client_name
+                FROM cases c
+                LEFT JOIN users cl ON c.client_id = cl.user_id
+                WHERE c.investigator_id = ${userID}
+                AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
+                ORDER BY c.created_at DESC
+            `;
+        } else if (userRole === 'client') {
+            // Clients see only their own cases (exclude deleted)
+            cases = await sql`
+                SELECT 
+                    c.case_id,
+                    c.case_number,
+                    c.case_name,
+                    c.description,
+                    c.priority,
+                    c.status,
+                    c.created_at,
+                    inv.first_name || ' ' || inv.last_name AS investigator_name
+                FROM cases c
+                LEFT JOIN users inv ON c.investigator_id = inv.user_id
+                WHERE c.client_id = ${userID}
+                AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
+                ORDER BY c.created_at DESC
+            `;
+        }
 
         res.json({ success: true, cases: cases });
 
@@ -486,7 +563,7 @@ app.get('/api/my-cases', requireLogin, async (req, res) => {
 });
 
 // Search investigators (only users with role 'investigator')
-app.get("/api/search-investigator", requireLogin, async (req, res) => {
+app.get("/api/search-investigator", requireInvestigator, async (req, res) => {
     const q = req.query.q || "";
 
     try {
@@ -510,7 +587,7 @@ app.get("/api/search-investigator", requireLogin, async (req, res) => {
 });
 
 // Create case with team members
-app.post("/api/create-case-with-team", requireLogin, async (req, res) => {
+app.post("/api/create-case-with-team", requireInvestigator, async (req, res) => {
     const { caseNumber, caseName, caseType, clientID, priority, status, teamMembers } = req.body;
 
     console.log("Received case data with team:", { caseNumber, caseName, caseType, clientID, priority, status, teamMembers });
@@ -546,7 +623,7 @@ app.post("/api/create-case-with-team", requireLogin, async (req, res) => {
 
         const caseID = caseResult[0].case_id;
 
-        // Assign team members to case (if you have a case_team table)
+        // Assign team members to case 
         if (teamMembers && teamMembers.length > 0) {
             for (const memberID of teamMembers) {
                 await sql`
@@ -566,8 +643,10 @@ app.post("/api/create-case-with-team", requireLogin, async (req, res) => {
 });
 
 // Get single case details WITH team info
-app.get('/api/case/:id', requireLogin, async (req, res) => {
+app.get('/api/case/:id', requireRole('investigator', 'client'), async (req, res) => {
     const caseId = req.params.id;
+    const userEmail = req.session.user;
+    const userRole = req.session.role;
 
     try {
         // Fetch main case data
@@ -592,21 +671,58 @@ app.get('/api/case/:id', requireLogin, async (req, res) => {
 
         const caseData = caseResult[0];
 
-        // Fetch lead investigator details
+        // Get current user's ID
+        const user = await sql`
+            SELECT user_id FROM users WHERE email = ${userEmail}
+        `;
+        const userId = user[0].user_id;
+
+        // AUTHORIZATION CHECK
+        let isAuthorized = false;
+
+        if (userRole === 'investigator') {
+            // Check if user is lead investigator
+            if (caseData.lead_investigator_id === userId) {
+                isAuthorized = true;
+            } else {
+                // Check if user is part of case team
+                const teamMember = await sql`
+                    SELECT * FROM case_team 
+                    WHERE case_id = ${caseId} 
+                    AND investigator_id = ${userId}
+                `;
+                if (teamMember.length > 0) {
+                    isAuthorized = true;
+                }
+            }
+        } else if (userRole === 'client') {
+            // Check if user is the client for this case
+            if (caseData.client_id === userId) {
+                isAuthorized = true;
+            }
+        }
+
+        if (!isAuthorized) {
+            console.log(`Access denied: User ${userId} attempted to access case ${caseId}`);
+            return res.status(403).json({ 
+                success: false, 
+                msg: "Access denied: You do not have permission to view this case" 
+            });
+        }
+
+        // User is authorized, fetch additional details
         const leadInvestigator = await sql`
             SELECT user_id, first_name || ' ' || last_name AS name
             FROM users
             WHERE user_id = ${caseData.lead_investigator_id}
         `;
 
-        // Fetch client details
         const client = await sql`
             SELECT user_id, first_name || ' ' || last_name AS name
             FROM users
             WHERE user_id = ${caseData.client_id}
         `;
 
-        // Fetch other investigators in the team
         const investigators = await sql`
             SELECT u.user_id, u.first_name || ' ' || u.last_name AS name
             FROM case_team ct
@@ -632,8 +748,6 @@ app.get('/api/case/:id', requireLogin, async (req, res) => {
 });
 
 // Setup storage for uploaded files
-const fs = require('fs');
-
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -650,10 +764,50 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-app.post('/api/upload-evidence', upload.single('file'), async (req, res) => {
+// Upload evidence (investigators only, with authorization check)
+app.post('/api/upload-evidence', requireInvestigator, upload.single('file'), async (req, res) => {
     try {
         const { case_id, file_hash, evidence_summary, ...exif } = req.body;
         const filename = req.file.filename;
+        const userEmail = req.session.user;
+
+        //  Get user ID
+        const user = await sql`
+            SELECT user_id FROM users WHERE email = ${userEmail}
+        `;
+        const userId = user[0].user_id;
+
+        // Check if user is authorized for this case
+        const caseData = await sql`
+            SELECT investigator_id FROM cases WHERE case_id = ${case_id}
+        `;
+
+        if (caseData.length === 0) {
+            // Delete uploaded file if case not found
+            fs.unlinkSync(path.join(uploadsDir, filename));
+            return res.status(404).json({ success: false, message: "Case not found" });
+        }
+
+        // Check if user is lead investigator or team member
+        let isAuthorized = caseData[0].investigator_id === userId;
+        
+        if (!isAuthorized) {
+            const teamMember = await sql`
+                SELECT * FROM case_team 
+                WHERE case_id = ${case_id} 
+                AND investigator_id = ${userId}
+            `;
+            isAuthorized = teamMember.length > 0;
+        }
+
+        if (!isAuthorized) {
+            // Delete uploaded file if not authorized
+            fs.unlinkSync(path.join(uploadsDir, filename));
+            return res.status(403).json({ 
+                success: false, 
+                message: "Access denied: You are not authorized to upload evidence for this case" 
+            });
+        }
 
         // Helper function to parse EXIF date format (YYYY:MM:DD HH:MM:SS) to ISO
         const parseExifDate = (dateStr) => {
@@ -729,18 +883,66 @@ app.post('/api/upload-evidence', upload.single('file'), async (req, res) => {
 });
 
 // Get all evidence for a case
-app.get('/api/get-evidence', requireLogin, async (req, res) => {
+app.get('/api/get-evidence', requireRole('investigator', 'client'), async (req, res) => {
     const caseId = req.query.case_id;
-    if (!caseId) return res.status(400).json({ success: false, msg: 'Missing case_id' });
+    const userEmail = req.session.user;
+    const userRole = req.session.role;
+
+    if (!caseId) {
+        return res.status(400).json({ success: false, msg: 'Missing case_id' });
+    }
 
     try {
+        // Get user ID
+        const user = await sql`
+            SELECT user_id FROM users WHERE email = ${userEmail}
+        `;
+        const userId = user[0].user_id;
+
+        // Check if user is authorized for this case
+        const caseData = await sql`
+            SELECT investigator_id, client_id FROM cases WHERE case_id = ${caseId}
+        `;
+
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: "Case not found" });
+        }
+
+        // Authorization check
+        let isAuthorized = false;
+
+        if (userRole === 'investigator') {
+            if (caseData[0].investigator_id === userId) {
+                isAuthorized = true;
+            } else {
+                const teamMember = await sql`
+                    SELECT * FROM case_team 
+                    WHERE case_id = ${caseId} 
+                    AND investigator_id = ${userId}
+                `;
+                isAuthorized = teamMember.length > 0;
+            }
+        } else if (userRole === 'client') {
+            isAuthorized = caseData[0].client_id === userId;
+        }
+
+        if (!isAuthorized) {
+            return res.status(403).json({ 
+                success: false, 
+                msg: "Access denied: You are not authorized to view evidence for this case" 
+            });
+        }
+
+        // Fetch evidence
         const evidence = await sql`
             SELECT *
             FROM evidence
             WHERE case_id = ${caseId}
             ORDER BY collected_at DESC
         `;
+
         res.json(evidence);
+
     } catch (err) {
         console.error("Error fetching evidence:", err);
         res.status(500).json({ success: false, msg: "Server error fetching evidence" });
@@ -748,20 +950,43 @@ app.get('/api/get-evidence', requireLogin, async (req, res) => {
 });
 
 // Soft delete a case (move to deleted cases)
-app.post('/api/cases/:id/delete', requireLogin, async (req, res) => {
+app.post('/api/cases/:id/delete', requireInvestigator, async (req, res) => {
     const caseId = req.params.id;
     const { is_deleted, deleted_at } = req.body;
+    const userEmail = req.session.user;
 
     try {
+        // Get user ID
+        const user = await sql`
+            SELECT user_id FROM users WHERE email = ${userEmail}
+        `;
+        const userId = user[0].user_id;
+
+        // Check if user is authorized to delete this case (must be lead investigator)
+        const caseData = await sql`
+            SELECT investigator_id FROM cases WHERE case_id = ${caseId}
+        `;
+
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: "Case not found" });
+        }
+
+        if (caseData[0].investigator_id !== userId) {
+            return res.status(403).json({ 
+                success: false, 
+                msg: "Access denied: Only the lead investigator can delete this case" 
+            });
+        }
+
+        // Delete the case
         await sql`
             UPDATE cases
             SET is_deleted = ${is_deleted},
-                deleted_at = ${deleted_at},
-                status = 'closed'  -- <--- This forces the status to Closed
+                deleted_at = ${deleted_at}
             WHERE case_id = ${caseId}
         `;
 
-        res.json({ success: true, msg: "Case moved to deleted cases and marked as Closed" });
+        res.json({ success: true, msg: "Case moved to deleted cases" });
 
     } catch (err) {
         console.error("Error deleting case:", err);
@@ -770,7 +995,7 @@ app.post('/api/cases/:id/delete', requireLogin, async (req, res) => {
 });
 
 // Get deleted cases for current user
-app.get('/api/my-cases/deleted', requireLogin, async (req, res) => {
+app.get('/api/my-cases/deleted', requireInvestigator, async (req, res) => {
     try {
         const investigatorEmail = req.session.user;
 
@@ -813,20 +1038,44 @@ app.get('/api/my-cases/deleted', requireLogin, async (req, res) => {
     }
 });
 
+
 // Restore a deleted case
-app.post('/api/cases/:id/restore', requireLogin, async (req, res) => {
+app.post('/api/cases/:id/restore', requireInvestigator, async (req, res) => {
     const caseId = req.params.id;
+    const userEmail = req.session.user;
 
     try {
+        // Get user ID
+        const user = await sql`
+            SELECT user_id FROM users WHERE email = ${userEmail}
+        `;
+        const userId = user[0].user_id;
+
+        // Check if user is authorized to restore this case (must be lead investigator)
+        const caseData = await sql`
+            SELECT investigator_id FROM cases WHERE case_id = ${caseId}
+        `;
+
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: "Case not found" });
+        }
+
+        if (caseData[0].investigator_id !== userId) {
+            return res.status(403).json({ 
+                success: false, 
+                msg: "Access denied: Only the lead investigator can restore this case" 
+            });
+        }
+
+        // Restore the case
         await sql`
             UPDATE cases
             SET is_deleted = FALSE,
-                deleted_at = NULL,
-                status = 'active'  -- <--- This makes the case active again
+                deleted_at = NULL
             WHERE case_id = ${caseId}
         `;
 
-        res.json({ success: true, msg: "Case restored successfully and reopened" });
+        res.json({ success: true, msg: "Case restored successfully" });
 
     } catch (err) {
         console.error("Error restoring case:", err);
@@ -835,10 +1084,33 @@ app.post('/api/cases/:id/restore', requireLogin, async (req, res) => {
 });
 
 // Permanently delete a case
-app.delete('/api/cases/:id/permanent-delete', requireLogin, async (req, res) => {
+app.delete('/api/cases/:id/permanent-delete', requireInvestigator, async (req, res) => {
     const caseId = req.params.id;
+    const userEmail = req.session.user;
 
     try {
+        // Get user ID
+        const user = await sql`
+            SELECT user_id FROM users WHERE email = ${userEmail}
+        `;
+        const userId = user[0].user_id;
+
+        // Check if user is authorized (must be lead investigator)
+        const caseData = await sql`
+            SELECT investigator_id FROM cases WHERE case_id = ${caseId}
+        `;
+
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: "Case not found" });
+        }
+
+        if (caseData[0].investigator_id !== userId) {
+            return res.status(403).json({ 
+                success: false, 
+                msg: "Access denied: Only the lead investigator can permanently delete this case" 
+            });
+        }
+
         // Delete related records first (evidence, case_team, etc.)
         await sql`
             DELETE FROM evidence
@@ -866,6 +1138,7 @@ app.delete('/api/cases/:id/permanent-delete', requireLogin, async (req, res) => 
 
 
 
+// ================ ERROR HANDLING ====================
 
 // Catch-all middleware for any undefined routes
 app.use((req, res) => {
@@ -876,4 +1149,5 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log(`Role-Based Access Control (RBAC) is enabled`);
 });
