@@ -69,7 +69,7 @@ const requireRole = (...allowedRoles) =>{
             return res.redirect('/access-denied.html');
         }
         
-        console.log(`Access granted: User role '${userRole}' is authorized`);
+        console.log(`Access granted: User role '${userRole}' is authorised`);
         next();
     };
 };
@@ -1136,6 +1136,75 @@ app.delete('/api/cases/:id/permanent-delete', requireInvestigator, async (req, r
     }
 });
 
+// Get audit log for a case
+app.get('/api/cases/:id/audit-log', requireRole('investigator', 'client'), async (req, res) => {
+    const caseId = req.params.id;
+    const userEmail = req.session.user;
+    const userRole = req.session.role;
+
+    try {
+        // Get user ID
+        const user = await sql`
+            SELECT user_id FROM users WHERE email = ${userEmail}
+        `;
+        const userId = user[0].user_id;
+
+        // Verify authorization for this case
+        const caseData = await sql`
+            SELECT investigator_id, client_id FROM cases WHERE case_id = ${caseId}
+        `;
+
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: "Case not found" });
+        }
+
+        // Authorization check
+        let isAuthorized = false;
+        if (userRole === 'investigator') {
+            isAuthorized = caseData[0].investigator_id === userId;
+            // Check team members too
+            if (!isAuthorized) {
+                const teamMember = await sql`
+                    SELECT * FROM case_team 
+                    WHERE case_id = ${caseId} AND investigator_id = ${userId}
+                `;
+                isAuthorized = teamMember.length > 0;
+            }
+        } else if (userRole === 'client') {
+            isAuthorized = caseData[0].client_id === userId;
+        }
+
+        if (!isAuthorized) {
+            return res.status(403).json({ 
+                success: false, 
+                msg: "Access denied" 
+            });
+        }
+
+        // Fetch audit log events
+        const auditLog = await sql`
+            SELECT 
+                al.audit_id as id,
+                al.timestamp,
+                al.action,
+                al.details,
+                al.event_hash as hash,
+                al.previous_hash as prev_hash,
+                u.first_name || ' ' || u.last_name as user,
+                u.user_id
+            FROM audit_log al
+            JOIN users u ON al.user_id = u.user_id
+            WHERE al.case_id = ${caseId}
+            ORDER BY al.timestamp ASC
+        `;
+
+        res.json({ success: true, auditLog: auditLog });
+
+    } catch (err) {
+        console.error("Error fetching audit log:", err);
+        res.status(500).json({ success: false, msg: "Error fetching audit log" });
+    }
+});
 
 
 // ================ ERROR HANDLING ====================
