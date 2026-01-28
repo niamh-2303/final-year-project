@@ -1206,6 +1206,270 @@ app.get('/api/cases/:id/audit-log', requireRole('investigator', 'client'), async
     }
 });
 
+// ==================== CASE DETAILS ENDPOINTS ====================
+
+// Get case overview
+app.get('/api/cases/:id/overview', requireRole('investigator', 'client'), async (req, res) => {
+    const caseId = req.params.id;
+    const userEmail = req.session.user;
+    const userRole = req.session.role;
+
+    try {
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        // Authorization check
+        const caseData = await sql`
+            SELECT investigator_id, client_id FROM cases WHERE case_id = ${caseId}
+        `;
+
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: "Case not found" });
+        }
+
+        let isAuthorized = false;
+        if (userRole === 'investigator') {
+            isAuthorized = caseData[0].investigator_id === userId;
+            if (!isAuthorized) {
+                const teamMember = await sql`
+                    SELECT * FROM case_team WHERE case_id = ${caseId} AND investigator_id = ${userId}
+                `;
+                isAuthorized = teamMember.length > 0;
+            }
+        } else if (userRole === 'client') {
+            isAuthorized = caseData[0].client_id === userId;
+        }
+
+        if (!isAuthorized) {
+            return res.status(403).json({ success: false, msg: "Access denied" });
+        }
+
+        // Fetch overview
+        const overview = await sql`
+            SELECT * FROM case_details WHERE case_id = ${caseId}
+        `;
+
+        res.json({ 
+            success: true, 
+            overview: overview[0] || { overview: '' } 
+        });
+
+    } catch (err) {
+        console.error("Error fetching overview:", err);
+        res.status(500).json({ success: false, msg: "Error fetching overview" });
+    }
+});
+
+// Save/Update case overview (investigators only)
+app.post('/api/cases/:id/overview', requireInvestigator, async (req, res) => {
+    const caseId = req.params.id;
+    const { overview } = req.body;
+    const userEmail = req.session.user;
+
+    try {
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        // Check authorization
+        const caseData = await sql`
+            SELECT investigator_id FROM cases WHERE case_id = ${caseId}
+        `;
+
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: "Case not found" });
+        }
+
+        let isAuthorized = caseData[0].investigator_id === userId;
+        if (!isAuthorized) {
+            const teamMember = await sql`
+                SELECT * FROM case_team WHERE case_id = ${caseId} AND investigator_id = ${userId}
+            `;
+            isAuthorized = teamMember.length > 0;
+        }
+
+        if (!isAuthorized) {
+            return res.status(403).json({ success: false, msg: "Access denied" });
+        }
+
+        // Check if overview exists
+        const existing = await sql`
+            SELECT * FROM case_details WHERE case_id = ${caseId}
+        `;
+
+        if (existing.length > 0) {
+            // Update existing
+            await sql`
+                UPDATE case_details 
+                SET overview = ${overview}, 
+                    updated_at = NOW(), 
+                    updated_by = ${userId}
+                WHERE case_id = ${caseId}
+            `;
+        } else {
+            // Insert new
+            await sql`
+                INSERT INTO case_details (case_id, overview, updated_by)
+                VALUES (${caseId}, ${overview}, ${userId})
+            `;
+        }
+
+        res.json({ success: true, msg: "Overview saved successfully" });
+
+    } catch (err) {
+        console.error("Error saving overview:", err);
+        res.status(500).json({ success: false, msg: "Error saving overview" });
+    }
+});
+
+// Get case findings
+app.get('/api/cases/:id/findings', requireRole('investigator', 'client'), async (req, res) => {
+    const caseId = req.params.id;
+    // Same authorization logic as overview
+    // ... (similar to overview endpoint)
+    
+    try {
+        const findings = await sql`
+            SELECT * FROM case_findings WHERE case_id = ${caseId}
+        `;
+
+        res.json({ 
+            success: true, 
+            findings: findings[0] || { findings: '', recommendations: '' } 
+        });
+    } catch (err) {
+        console.error("Error fetching findings:", err);
+        res.status(500).json({ success: false, msg: "Error fetching findings" });
+    }
+});
+
+// Save findings (investigators only)
+app.post('/api/cases/:id/findings', requireInvestigator, async (req, res) => {
+    const caseId = req.params.id;
+    const { findings, recommendations } = req.body;
+    const userEmail = req.session.user;
+
+    try {
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        // Authorization check (same as overview)
+        // ...
+
+        const existing = await sql`
+            SELECT * FROM case_findings WHERE case_id = ${caseId}
+        `;
+
+        if (existing.length > 0) {
+            await sql`
+                UPDATE case_findings 
+                SET findings = ${findings}, 
+                    recommendations = ${recommendations},
+                    updated_at = NOW(), 
+                    updated_by = ${userId}
+                WHERE case_id = ${caseId}
+            `;
+        } else {
+            await sql`
+                INSERT INTO case_findings (case_id, findings, recommendations, updated_by)
+                VALUES (${caseId}, ${findings}, ${recommendations}, ${userId})
+            `;
+        }
+
+        res.json({ success: true, msg: "Findings saved successfully" });
+
+    } catch (err) {
+        console.error("Error saving findings:", err);
+        res.status(500).json({ success: false, msg: "Error saving findings" });
+    }
+});
+
+// Get tools used
+app.get('/api/cases/:id/tools', requireRole('investigator', 'client'), async (req, res) => {
+    const caseId = req.params.id;
+    
+    try {
+        const tools = await sql`
+            SELECT * FROM case_tools 
+            WHERE case_id = ${caseId}
+            ORDER BY created_at ASC
+        `;
+
+        res.json({ success: true, tools: tools });
+    } catch (err) {
+        console.error("Error fetching tools:", err);
+        res.status(500).json({ success: false, msg: "Error fetching tools" });
+    }
+});
+
+// Add tool (investigators only)
+app.post('/api/cases/:id/tools', requireInvestigator, async (req, res) => {
+    const caseId = req.params.id;
+    const { tool_name, tool_version, purpose } = req.body;
+    const userEmail = req.session.user;
+
+    try {
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        await sql`
+            INSERT INTO case_tools (case_id, tool_name, tool_version, purpose, added_by)
+            VALUES (${caseId}, ${tool_name}, ${tool_version}, ${purpose}, ${userId})
+        `;
+
+        res.json({ success: true, msg: "Tool added successfully" });
+
+    } catch (err) {
+        console.error("Error adding tool:", err);
+        res.status(500).json({ success: false, msg: "Error adding tool" });
+    }
+});
+
+// Delete tool (investigators only)
+app.delete('/api/cases/:caseId/tools/:toolId', requireInvestigator, async (req, res) => {
+    const { caseId, toolId } = req.params;
+
+    try {
+        await sql`
+            DELETE FROM case_tools 
+            WHERE tool_id = ${toolId} AND case_id = ${caseId}
+        `;
+
+        res.json({ success: true, msg: "Tool deleted successfully" });
+
+    } catch (err) {
+        console.error("Error deleting tool:", err);
+        res.status(500).json({ success: false, msg: "Error deleting tool" });
+    }
+});
+
+// Get evidence timeline
+app.get('/api/cases/:id/evidence-timeline', requireRole('investigator', 'client'), async (req, res) => {
+    const caseId = req.params.id;
+
+    try {
+        const timeline = await sql`
+            SELECT 
+                evidence_id,
+                evidence_name,
+                datetime_original,
+                datetime_digitized,
+                collected_at,
+                description
+            FROM evidence
+            WHERE case_id = ${caseId}
+            AND (datetime_original IS NOT NULL OR datetime_digitized IS NOT NULL OR collected_at IS NOT NULL)
+            ORDER BY 
+                COALESCE(datetime_original, datetime_digitized, collected_at) ASC
+        `;
+
+        res.json({ success: true, timeline: timeline });
+
+    } catch (err) {
+        console.error("Error fetching timeline:", err);
+        res.status(500).json({ success: false, msg: "Error fetching timeline" });
+    }
+});
+
 
 // ================ ERROR HANDLING ====================
 

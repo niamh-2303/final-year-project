@@ -655,3 +655,349 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Make switchView available globally
 window.switchView = switchView;
+
+/* ======================================================
+   OVERVIEW FUNCTIONS
+====================================================== */
+let originalOverview = '';
+
+async function loadOverview() {
+    try {
+        const response = await fetch(`/api/cases/${caseID}/overview`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const overview = data.overview.overview || 'No overview has been added yet.';
+            document.getElementById('overviewDisplay').innerHTML = `<p>${overview.replace(/\n/g, '<br>')}</p>`;
+            document.getElementById('overviewTextarea').value = overview;
+            originalOverview = overview;
+        }
+    } catch (error) {
+        console.error('Error loading overview:', error);
+        document.getElementById('overviewDisplay').innerHTML = '<p class="text-danger">Error loading overview</p>';
+    }
+}
+
+function toggleEditOverview() {
+    document.getElementById('overviewDisplay').style.display = 'none';
+    document.getElementById('overviewTextarea').style.display = 'block';
+    document.getElementById('editOverviewBtn').style.display = 'none';
+    document.getElementById('saveOverviewBtn').style.display = 'inline-block';
+    document.getElementById('cancelOverviewBtn').style.display = 'inline-block';
+}
+
+function cancelEditOverview() {
+    document.getElementById('overviewDisplay').style.display = 'block';
+    document.getElementById('overviewTextarea').style.display = 'none';
+    document.getElementById('editOverviewBtn').style.display = 'inline-block';
+    document.getElementById('saveOverviewBtn').style.display = 'none';
+    document.getElementById('cancelOverviewBtn').style.display = 'none';
+    document.getElementById('overviewTextarea').value = originalOverview;
+}
+
+async function saveOverview() {
+    const overview = document.getElementById('overviewTextarea').value;
+    
+    try {
+        const response = await fetch(`/api/cases/${caseID}/overview`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ overview })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            originalOverview = overview;
+            document.getElementById('overviewDisplay').innerHTML = `<p>${overview.replace(/\n/g, '<br>')}</p>`;
+            cancelEditOverview();
+            alert('Overview saved successfully!');
+        } else {
+            alert('Error saving overview: ' + data.msg);
+        }
+    } catch (error) {
+        console.error('Error saving overview:', error);
+        alert('Error saving overview');
+    }
+}
+
+/* ======================================================
+   FINDINGS FUNCTIONS
+====================================================== */
+let originalFindings = '';
+let originalRecommendations = '';
+
+async function loadFindings() {
+    try {
+        const response = await fetch(`/api/cases/${caseID}/findings`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const findings = data.findings.findings || 'No findings have been documented yet.';
+            const recommendations = data.findings.recommendations || 'No recommendations have been provided yet.';
+            
+            document.getElementById('findingsText').innerHTML = `<p>${findings.replace(/\n/g, '<br>')}</p>`;
+            document.getElementById('recommendationsText').innerHTML = `<p>${recommendations.replace(/\n/g, '<br>')}</p>`;
+            document.getElementById('findingsTextarea').value = findings;
+            document.getElementById('recommendationsTextarea').value = recommendations;
+            
+            originalFindings = findings;
+            originalRecommendations = recommendations;
+        }
+    } catch (error) {
+        console.error('Error loading findings:', error);
+    }
+}
+
+function toggleEditFindings() {
+    document.getElementById('findingsDisplay').style.display = 'none';
+    document.getElementById('findingsEdit').style.display = 'block';
+    document.getElementById('editFindingsBtn').style.display = 'none';
+    document.getElementById('saveFindingsBtn').style.display = 'inline-block';
+    document.getElementById('cancelFindingsBtn').style.display = 'inline-block';
+}
+
+function cancelEditFindings() {
+    document.getElementById('findingsDisplay').style.display = 'block';
+    document.getElementById('findingsEdit').style.display = 'none';
+    document.getElementById('editFindingsBtn').style.display = 'inline-block';
+    document.getElementById('saveFindingsBtn').style.display = 'none';
+    document.getElementById('cancelFindingsBtn').style.display = 'none';
+    document.getElementById('findingsTextarea').value = originalFindings;
+    document.getElementById('recommendationsTextarea').value = originalRecommendations;
+}
+
+async function saveFindings() {
+    const findings = document.getElementById('findingsTextarea').value;
+    const recommendations = document.getElementById('recommendationsTextarea').value;
+    
+    try {
+        const response = await fetch(`/api/cases/${caseID}/findings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ findings, recommendations })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            originalFindings = findings;
+            originalRecommendations = recommendations;
+            document.getElementById('findingsText').innerHTML = `<p>${findings.replace(/\n/g, '<br>')}</p>`;
+            document.getElementById('recommendationsText').innerHTML = `<p>${recommendations.replace(/\n/g, '<br>')}</p>`;
+            cancelEditFindings();
+            alert('Findings saved successfully!');
+        } else {
+            alert('Error saving findings: ' + data.msg);
+        }
+    } catch (error) {
+        console.error('Error saving findings:', error);
+        alert('Error saving findings');
+    }
+}
+
+/* ======================================================
+   TOOLS FUNCTIONS
+====================================================== */
+let toolsModal = null;
+
+async function loadTools() {
+    try {
+        const response = await fetch(`/api/cases/${caseID}/tools`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayTools(data.tools);
+        }
+    } catch (error) {
+        console.error('Error loading tools:', error);
+    }
+}
+
+function displayTools(tools) {
+    const tbody = document.getElementById('toolsTableBody');
+    tbody.innerHTML = '';
+    
+    if (tools.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No tools added yet</td></tr>';
+        return;
+    }
+    
+    tools.forEach(tool => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${tool.tool_name}</strong></td>
+            <td>${tool.tool_version || 'N/A'}</td>
+            <td>${tool.purpose || 'N/A'}</td>
+            <td>${new Date(tool.created_at).toLocaleDateString()}</td>
+            <td class="investigator-only">
+                <button class="btn btn-sm btn-danger" onclick="deleteTool(${tool.tool_id})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function showAddToolModal() {
+    if (!toolsModal) {
+        toolsModal = new bootstrap.Modal(document.getElementById('addToolModal'));
+    }
+    document.getElementById('toolName').value = '';
+    document.getElementById('toolVersion').value = '';
+    document.getElementById('toolPurpose').value = '';
+    toolsModal.show();
+}
+
+async function addTool() {
+    const toolName = document.getElementById('toolName').value.trim();
+    const toolVersion = document.getElementById('toolVersion').value.trim();
+    const toolPurpose = document.getElementById('toolPurpose').value.trim();
+    
+    if (!toolName) {
+        alert('Please enter a tool name');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/cases/${caseID}/tools`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                tool_name: toolName, 
+                tool_version: toolVersion, 
+                purpose: toolPurpose 
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            toolsModal.hide();
+            loadTools();
+            alert('Tool added successfully!');
+        } else {
+            alert('Error adding tool: ' + data.msg);
+        }
+    } catch (error) {
+        console.error('Error adding tool:', error);
+        alert('Error adding tool');
+    }
+}
+
+async function deleteTool(toolId) {
+    if (!confirm('Are you sure you want to delete this tool?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/cases/${caseID}/tools/${toolId}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            loadTools();
+            alert('Tool deleted successfully!');
+        } else {
+            alert('Error deleting tool: ' + data.msg);
+        }
+    } catch (error) {
+        console.error('Error deleting tool:', error);
+        alert('Error deleting tool');
+    }
+}
+
+/* ======================================================
+   EVIDENCE TIMELINE FUNCTIONS
+====================================================== */
+async function loadEvidenceTimeline() {
+    try {
+        const response = await fetch(`/api/cases/${caseID}/evidence-timeline`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayEvidenceTimeline(data.timeline);
+        }
+    } catch (error) {
+        console.error('Error loading timeline:', error);
+        document.getElementById('evidenceTimeline').innerHTML = '<p class="text-danger">Error loading timeline</p>';
+    }
+}
+
+function displayEvidenceTimeline(timeline) {
+    const container = document.getElementById('evidenceTimeline');
+    
+    if (timeline.length === 0) {
+        container.innerHTML = '<p class="text-muted">No evidence with timestamp metadata available</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    timeline.forEach((item, index) => {
+        const timestamp = item.datetime_original || item.datetime_digitized || item.collected_at;
+        const date = new Date(timestamp);
+        
+        const timelineItem = document.createElement('div');
+        timelineItem.className = 'timeline-item';
+        timelineItem.innerHTML = `
+            <div class="timeline-icon uploaded">
+                <i class="bi bi-file-earmark"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-header">
+                    <div class="timeline-title">${item.evidence_name}</div>
+                    <div class="timeline-time">
+                        <i class="bi bi-clock"></i> ${date.toLocaleString()}
+                    </div>
+                </div>
+                <div class="timeline-details">
+                    ${item.description || 'No description provided'}
+                </div>
+                <div class="timeline-hash">
+                    <small><i class="bi bi-calendar"></i> 
+                        ${item.datetime_original ? 'Original Date' : item.datetime_digitized ? 'Digitized Date' : 'Upload Date'}
+                    </small>
+                </div>
+            </div>
+        `;
+        container.appendChild(timelineItem);
+    });
+}
+
+/* ======================================================
+   UPDATE PAGE LOAD TO INCLUDE NEW FUNCTIONS
+====================================================== */
+// Update your existing DOMContentLoaded to load all content
+window.addEventListener("DOMContentLoaded", async () => {
+    const params = new URLSearchParams(window.location.search);
+    caseID = params.get("id");
+
+    if (!caseID) {
+        alert("No case ID found. Redirecting...");
+        window.location.href = "dashboard.html";
+        return;
+    }
+
+    await loadCaseData();
+    loadEvidenceLog(caseID);
+    loadOverview();
+    loadFindings();
+    loadTools();
+    loadEvidenceTimeline();
+    attachFileUploadHandlers();
+});
+
+// Make functions available globally
+window.toggleEditOverview = toggleEditOverview;
+window.cancelEditOverview = cancelEditOverview;
+window.saveOverview = saveOverview;
+window.toggleEditFindings = toggleEditFindings;
+window.cancelEditFindings = cancelEditFindings;
+window.saveFindings = saveFindings;
+window.showAddToolModal = showAddToolModal;
+window.addTool = addTool;
+window.deleteTool = deleteTool;

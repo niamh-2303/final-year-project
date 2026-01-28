@@ -211,26 +211,41 @@
                     <!-- Overview Tab -->
                     <div class="tab-pane fade show active" id="overview" role="tabpanel">
                         <div class="row">
-                            <div class="col-md-8">
+                            <div class="col-md-12">
                                 <div class="form-card case-page">
-                                    <h4 class="form-card-title">
-                                        <i class="bi bi-info-circle"></i>
-                                        Case Details
-                                    </h4>
-                                    <p class="text-muted">Overview section content will go here...</p>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-card case-page">
-                                    <h4 class="form-card-title">
-                                        <i class="bi bi-speedometer2"></i>
-                                        Quick Stats
-                                    </h4>
-                                    <p class="text-muted">Stats content will go here...</p>
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h4 class="form-card-title mb-0">
+                                            <i class="bi bi-info-circle"></i>
+                                            Case Overview
+                                        </h4>
+                                        <div>
+                                            <button class="btn btn-sm btn-primary investigator-only" id="editOverviewBtn" onclick="toggleEditOverview()">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-success investigator-only" id="saveOverviewBtn" onclick="saveOverview()" style="display: none;">
+                                                <i class="bi bi-check"></i> Save
+                                            </button>
+                                            <button class="btn btn-sm btn-secondary investigator-only" id="cancelOverviewBtn" onclick="cancelEditOverview()" style="display: none;">
+                                                <i class="bi bi-x"></i> Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="overviewDisplay" class="overview-content">
+                                        <p class="text-muted">Loading overview...</p>
+                                    </div>
+                                    
+                                    <textarea 
+                                        class="form-control investigator-only" 
+                                        id="overviewTextarea" 
+                                        rows="15" 
+                                        style="display: none;"
+                                        placeholder="Enter the case overview, background information, and initial assessment..."></textarea>
                                 </div>
                             </div>
                         </div>
                     </div>
+
 
                     <!-- Chain of Custody Tab -->
                     <div class="tab-pane fade" id="CoC" role="tabpanel">
@@ -442,40 +457,110 @@
                         </div>
                     </div>
 
-                    <!-- Notes Tab -->
+                    <!-- Findings Tab -->
                     <div class="tab-pane fade" id="findings" role="tabpanel">
                         <div class="form-card case-page">
-                            <h4 class="form-card-title">
-                                <i class="bi bi-journal-text"></i>
-                                Case Findings
-                            </h4>
-                            <p class="text-muted">Case findings and reccomendations section content will go here...</p>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="form-card-title mb-0">
+                                    <i class="bi bi-journal-text"></i>
+                                    Case Findings & Recommendations
+                                </h4>
+                                <div>
+                                    <button class="btn btn-sm btn-primary investigator-only" id="editFindingsBtn" onclick="toggleEditFindings()">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <button class="btn btn-sm btn-success investigator-only" id="saveFindingsBtn" onclick="saveFindings()" style="display: none;">
+                                        <i class="bi bi-check"></i> Save
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary investigator-only" id="cancelFindingsBtn" onclick="cancelEditFindings()" style="display: none;">
+                                        <i class="bi bi-x"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="findingsDisplay" class="findings-content">
+                                <h5>Findings</h5>
+                                <div id="findingsText" class="content-display">
+                                    <p class="text-muted">Loading findings...</p>
+                                </div>
+                                
+                                <h5 class="mt-4">Recommendations</h5>
+                                <div id="recommendationsText" class="content-display">
+                                    <p class="text-muted">Loading recommendations...</p>
+                                </div>
+                            </div>
+                            
+                            <div id="findingsEdit" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="findingsTextarea" class="form-label"><strong>Findings</strong></label>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="findingsTextarea" 
+                                        rows="10"
+                                        placeholder="Document your investigation findings, analysis results, and key discoveries..."></textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="recommendationsTextarea" class="form-label"><strong>Recommendations</strong></label>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="recommendationsTextarea" 
+                                        rows="8"
+                                        placeholder="Provide recommendations for remediation, future prevention, and next steps..."></textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Timeline Tab -->
+                   <!-- Timeline Tab -->
                     <div class="tab-pane fade" id="timeline" role="tabpanel">
                         <div class="form-card case-page">
                             <h4 class="form-card-title">
                                 <i class="bi bi-clock-history"></i>
-                                Case Timeline
+                                Evidence Timeline
                             </h4>
-                            <p class="text-muted">Timeline section content will go here...</p>
+                            <p class="text-muted mb-4">Timeline based on EXIF metadata from evidence files</p>
+                            
+                            <div id="evidenceTimeline" class="evidence-timeline">
+                                <p class="text-muted">Loading timeline...</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="tab-pane fade" id="tools" role="tabpanel">
 
-                    <!-- Tools used Tab -->  
-                    <div class="form-card case-page">
-                        <h4 class="form-card-title">
-                            <i class="bi bi-tools"></i>
-                            Tools Used
-                        </h4>
-                        <p class="text-muted">
-                            Tools, software, and forensic utilities used during this investigation will be listed here...
-                        </p>
+                    <!-- Tools Used Tab -->
+                    <div class="tab-pane fade" id="tools" role="tabpanel">
+                        <div class="form-card case-page">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="form-card-title mb-0">
+                                    <i class="bi bi-tools"></i>
+                                    Tools Used
+                                </h4>
+                                <button class="btn btn-sm btn-primary investigator-only" onclick="showAddToolModal()">
+                                    <i class="bi bi-plus-circle"></i> Add Tool
+                                </button>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="toolsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Tool Name</th>
+                                            <th>Version</th>
+                                            <th>Purpose</th>
+                                            <th>Added</th>
+                                            <th class="investigator-only">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="toolsTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-muted text-center">No tools added yet</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                </div>
+
 
                 <!-- Sign off and generate report -->
                 <div class="tab-pane fade" id="signoff" role="tabpanel">
@@ -494,6 +579,38 @@
         </div>
     </div>
 
+    <!-- Add Tool Modal -->
+    <div class="modal fade" id="addToolModal" tabindex="-1" aria-labelledby="addToolModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addToolModalLabel">
+                        <i class="bi bi-tools"></i> Add Tool
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="toolName" class="form-label">Tool Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="toolName" placeholder="e.g., Autopsy" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="toolVersion" class="form-label">Version</label>
+                        <input type="text" class="form-control" id="toolVersion" placeholder="e.g., 4.19.3">
+                    </div>
+                    <div class="mb-3">
+                        <label for="toolPurpose" class="form-label">Purpose</label>
+                        <textarea class="form-control" id="toolPurpose" rows="3" placeholder="e.g., Disk image analysis and file recovery"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addTool()">Add Tool</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
@@ -501,6 +618,6 @@
     <script src="js/profile.js"></script>
     <script src="js/case-area.js"></script>
     <script src="js/case-area-navigation.js"></script>
-    
+  
 </body>
 </html>
