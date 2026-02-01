@@ -31,6 +31,42 @@ app.use('/js', express.static(path.join(__dirname, '../views/js')));
 app.use('/images', express.static(path.join(__dirname, '../views/images')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Helper function to create audit log entries
+async function createAuditLog(caseId, userId, action, details) {
+    try {
+        // Get the previous hash (last event in chain)
+        const lastEvent = await sql`
+            SELECT event_hash 
+            FROM audit_log 
+            WHERE case_id = ${caseId}
+            ORDER BY timestamp DESC 
+            LIMIT 1
+        `;
+        
+        const previousHash = lastEvent.length > 0 
+            ? lastEvent[0].event_hash 
+            : '0000000000000000000000000000000000000000000000000000000000000000';
+        
+        // Create event data for hashing
+        const timestamp = new Date().toISOString();
+        const eventData = `${caseId}|${userId}|${action}|${details}|${timestamp}|${previousHash}`;
+        
+        // Calculate SHA-256 hash
+        const crypto = require('crypto');
+        const eventHash = crypto.createHash('sha256').update(eventData).digest('hex');
+        
+        // Insert audit log entry
+        await sql`
+            INSERT INTO audit_log (case_id, user_id, action, details, event_hash, previous_hash, timestamp)
+            VALUES (${caseId}, ${userId}, ${action}, ${details}, ${eventHash}, ${previousHash}, ${timestamp})
+        `;
+        
+        console.log(`Audit log created: ${action} for case ${caseId}`);
+    } catch (err) {
+        console.error('Error creating audit log:', err);
+    }
+}
+
 // ======Middleware===========
 //  to check if user is logged in
 var requireLogin = function (req, res, next) {
@@ -633,6 +669,14 @@ app.post("/api/create-case-with-team", requireInvestigator, async (req, res) => 
             }
         }
 
+        // CREATE AUDIT LOG ENTRY 
+        await createAuditLog(
+            caseID, 
+            investigatorID, 
+            'CASE_CREATED', 
+            `Case ${caseNumber} created with priority: ${priority}`
+        );
+
         console.log("Case created successfully with team members");
         res.status(200).json({ msg: "Case created successfully", caseID: caseID });
 
@@ -873,6 +917,13 @@ app.post('/api/upload-evidence', requireInvestigator, upload.single('file'), asy
             )
             RETURNING *;
         `;
+
+        await createAuditLog(
+            parseInt(case_id),
+            userId,
+            'EVIDENCE_UPLOADED',
+            `Evidence "${req.file.originalname}" uploaded. Hash: ${file_hash}`
+        );
 
         res.json({ success: true, evidence: result[0] });
 
@@ -1313,6 +1364,13 @@ app.post('/api/cases/:id/overview', requireInvestigator, async (req, res) => {
             `;
         }
 
+        await createAuditLog(
+            parseInt(caseId),
+            userId,
+            'OVERVIEW_MODIFIED',
+            `Case overview updated`
+        );
+
         res.json({ success: true, msg: "Overview saved successfully" });
 
     } catch (err) {
@@ -1374,6 +1432,13 @@ app.post('/api/cases/:id/findings', requireInvestigator, async (req, res) => {
                 VALUES (${caseId}, ${findings}, ${recommendations}, ${userId})
             `;
         }
+
+        await createAuditLog(
+            parseInt(caseId),
+            userId,
+            'FINDINGS_MODIFIED',
+            `Case findings and recommendations updated`
+        );
 
         res.json({ success: true, msg: "Findings saved successfully" });
 
