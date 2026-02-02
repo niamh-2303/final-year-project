@@ -484,7 +484,7 @@ function populateTeamTab() {
 }
 
 /* ======================================================
-   CHAIN OF CUSTODY / AUDIT LOG FUNCTIONS
+    AUDIT LOG FUNCTIONS
 ====================================================== */
 let currentView = 'friendly';
 
@@ -643,18 +643,283 @@ function formatAction(action) {
         .join(' ');
 }
 
-// Load audit log when CoC tab is clicked
 document.addEventListener('DOMContentLoaded', function() {
-    const cocTab = document.getElementById('coc-tab');
+    // Audit Log tab
+    const auditLogTab = document.getElementById('audit-log-tab');
+    if (auditLogTab) {
+        auditLogTab.addEventListener('shown.bs.tab', function() {
+            loadAuditLog();
+        });
+    }
+    
+    // Chain of Custody tab 
+    const cocTab = document.getElementById('chain-of-custody-tab');
     if (cocTab) {
         cocTab.addEventListener('shown.bs.tab', function() {
-            loadAuditLog();
+            loadChainOfCustody();
         });
     }
 });
 
 // Make switchView available globally
 window.switchView = switchView;
+
+/* ======================================================
+   CHAIN OF CUSTODY FUNCTIONS (NIST Compliant)
+====================================================== */
+let cocModal = null;
+
+// Load Chain of Custody records
+async function loadChainOfCustody() {
+    try {
+        const response = await fetch(`/api/cases/${caseID}/chain-of-custody`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayChainOfCustody(data.cocRecords);
+        }
+    } catch (error) {
+        console.error('Error loading CoC:', error);
+        document.getElementById('cocTimeline').innerHTML = '<p class="text-danger">Error loading chain of custody</p>';
+    }
+}
+
+// Display CoC records in timeline
+function displayChainOfCustody(records) {
+    const timeline = document.getElementById('cocTimeline');
+    
+    if (records.length === 0) {
+        timeline.innerHTML = '<p class="text-muted">No chain of custody events recorded yet. Click "Add CoC Event" to record evidence handling.</p>';
+        return;
+    }
+    
+    timeline.innerHTML = '';
+    
+    records.forEach(record => {
+        const eventCard = document.createElement('div');
+        eventCard.className = 'coc-event-card mb-3';
+        
+        const iconClass = getCoCIconClass(record.event_type);
+        const timeFormatted = new Date(record.event_datetime).toLocaleString();
+        
+        let transferInfo = '';
+        if (record.event_type === 'TRANSFERRED') {
+            transferInfo = `
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <strong>Released By:</strong><br>
+                        ${record.released_by_name || 'N/A'}<br>
+                        <small class="text-muted">${record.released_by_role || ''}</small>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Received By:</strong><br>
+                        ${record.received_by_name || 'N/A'}<br>
+                        <small class="text-muted">${record.received_by_role || ''}</small>
+                    </div>
+                </div>
+            `;
+        }
+        
+        let verificationInfo = '';
+        if (record.event_type === 'VERIFIED' && record.hash_verified) {
+            const matchClass = record.hash_match ? 'text-success' : 'text-danger';
+            const matchIcon = record.hash_match ? 'check-circle' : 'x-circle';
+            verificationInfo = `
+                <div class="mt-3">
+                    <strong>Hash Verification:</strong><br>
+                    Algorithm: ${record.hash_algorithm}<br>
+                    Result: <span class="${matchClass}"><i class="bi bi-${matchIcon}"></i> ${record.hash_match ? 'Match - Integrity Verified' : 'Mismatch - Integrity Compromised'}</span><br>
+                    <small class="text-muted">Hash: <code>${record.hash_value ? record.hash_value.substring(0, 16) + '...' : 'N/A'}</code></small>
+                </div>
+            `;
+        }
+        
+        eventCard.innerHTML = `
+            <div class="d-flex">
+                <div class="coc-icon ${iconClass}">
+                    <i class="bi ${getCoCIcon(record.event_type)}"></i>
+                </div>
+                <div class="coc-content flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="mb-1">${formatEventType(record.event_type)}</h5>
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> ${timeFormatted}
+                            </small>
+                        </div>
+                        <span class="badge bg-primary">${record.evidence_name}</span>
+                    </div>
+                    
+                    <div class="coc-details">
+                        <p class="mb-2"><strong>Reason:</strong> ${record.reason}</p>
+                        
+                        ${record.location ? `<p class="mb-2"><strong>Location:</strong> ${record.location}</p>` : ''}
+                        ${record.condition_at_event ? `<p class="mb-2"><strong>Condition:</strong> ${record.condition_at_event}</p>` : ''}
+                        ${record.access_type ? `<p class="mb-2"><strong>Access Type:</strong> ${record.access_type.replace(/_/g, ' ')}</p>` : ''}
+                        ${record.security_controls ? `<p class="mb-2"><strong>Security:</strong> ${record.security_controls}</p>` : ''}
+                        
+                        ${transferInfo}
+                        ${verificationInfo}
+                        
+                        ${record.notes ? `<p class="mt-3 mb-0"><strong>Notes:</strong><br>${record.notes}</p>` : ''}
+                    </div>
+                    
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <i class="bi bi-person"></i> Recorded by ${record.created_by_name} on ${new Date(record.created_at).toLocaleString()}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        timeline.appendChild(eventCard);
+    });
+}
+
+// Show Add CoC Event Modal
+async function showAddCoCEventModal() {
+    if (!cocModal) {
+        cocModal = new bootstrap.Modal(document.getElementById('addCoCEventModal'));
+    }
+    
+    // Load evidence list
+    try {
+        const response = await fetch(`/api/cases/${caseID}/evidence-list`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const select = document.getElementById('cocEvidenceId');
+            select.innerHTML = '<option value="">Select evidence...</option>';
+            
+            data.evidence.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.evidence_id;
+                option.textContent = item.evidence_name;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading evidence list:', error);
+    }
+    
+    // Reset form
+    document.getElementById('cocEventForm').reset();
+    updateCoCFormFields();
+    
+    cocModal.show();
+}
+
+// Update form fields based on event type
+function updateCoCFormFields() {
+    const eventType = document.getElementById('cocEventType').value;
+    
+    document.getElementById('transferFields').style.display = eventType === 'TRANSFERRED' ? 'block' : 'none';
+    document.getElementById('accessFields').style.display = eventType === 'ACCESSED' ? 'block' : 'none';
+    document.getElementById('verificationFields').style.display = eventType === 'VERIFIED' ? 'block' : 'none';
+}
+
+// Submit CoC event
+async function submitCoCEvent() {
+    const evidenceId = document.getElementById('cocEvidenceId').value;
+    const eventType = document.getElementById('cocEventType').value;
+    const reason = document.getElementById('cocReason').value;
+    
+    if (!evidenceId || !eventType || !reason) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    const cocData = {
+        evidence_id: evidenceId,
+        event_type: eventType,
+        reason: reason,
+        location: document.getElementById('cocLocation').value,
+        condition_at_event: document.getElementById('cocCondition').value,
+        security_controls: document.getElementById('cocSecurityControls').value,
+        notes: document.getElementById('cocNotes').value
+    };
+    
+    // Add type-specific fields
+    if (eventType === 'TRANSFERRED') {
+        cocData.released_by_name = document.getElementById('releasedBy').value;
+        cocData.released_by_role = document.getElementById('releasedByRole').value;
+        cocData.received_by_name = document.getElementById('receivedBy').value;
+        cocData.received_by_role = document.getElementById('receivedByRole').value;
+    }
+    
+    if (eventType === 'ACCESSED') {
+        cocData.access_type = document.getElementById('accessType').value;
+    }
+    
+    if (eventType === 'VERIFIED') {
+        cocData.hash_algorithm = document.getElementById('hashAlgorithm').value;
+        cocData.hash_match = document.getElementById('hashMatch').value;
+    }
+    
+    try {
+        const response = await fetch(`/api/cases/${caseID}/chain-of-custody`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cocData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            cocModal.hide();
+            loadChainOfCustody();
+            alert('Chain of Custody event added successfully!');
+        } else {
+            alert('Error: ' + data.msg);
+        }
+    } catch (error) {
+        console.error('Error adding CoC event:', error);
+        alert('Error adding CoC event');
+    }
+}
+
+// Helper functions
+function getCoCIconClass(eventType) {
+    const icons = {
+        'ACQUIRED': 'coc-acquired',
+        'TRANSFERRED': 'coc-transferred',
+        'ACCESSED': 'coc-accessed',
+        'VERIFIED': 'coc-verified',
+        'STORED': 'coc-stored',
+        'DISPOSED': 'coc-disposed'
+    };
+    return icons[eventType] || 'coc-default';
+}
+
+function getCoCIcon(eventType) {
+    const icons = {
+        'ACQUIRED': 'bi-download',
+        'TRANSFERRED': 'bi-arrow-left-right',
+        'ACCESSED': 'bi-eye',
+        'VERIFIED': 'bi-shield-check',
+        'STORED': 'bi-archive',
+        'DISPOSED': 'bi-trash'
+    };
+    return icons[eventType] || 'bi-circle';
+}
+
+function formatEventType(eventType) {
+    const names = {
+        'ACQUIRED': 'Initial Acquisition',
+        'TRANSFERRED': 'Custody Transfer',
+        'ACCESSED': 'Access/Handling Event',
+        'VERIFIED': 'Hash Verification',
+        'STORED': 'Storage Change',
+        'DISPOSED': 'Final Disposition'
+    };
+    return names[eventType] || eventType;
+}
+
+// Make functions globally available
+window.showAddCoCEventModal = showAddCoCEventModal;
+window.updateCoCFormFields = updateCoCFormFields;
+window.submitCoCEvent = submitCoCEvent;
 
 /* ======================================================
    OVERVIEW FUNCTIONS
@@ -971,7 +1236,6 @@ function displayEvidenceTimeline(timeline) {
 /* ======================================================
    UPDATE PAGE LOAD TO INCLUDE NEW FUNCTIONS
 ====================================================== */
-// Update your existing DOMContentLoaded to load all content
 window.addEventListener("DOMContentLoaded", async () => {
     const params = new URLSearchParams(window.location.search);
     caseID = params.get("id");
@@ -988,6 +1252,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     loadFindings();
     loadTools();
     loadEvidenceTimeline();
+    loadChainOfCustody();
     attachFileUploadHandlers();
 });
 

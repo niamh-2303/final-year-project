@@ -775,7 +775,7 @@ textarea.form-control {
     min-width: 0;
 }
 
-/* ==================== CHAIN OF CUSTODY / AUDIT LOG STYLES ==================== */
+/* ==================== AUDIT LOG STYLES ==================== */
 
 /* Stat Cards */
 .stat-card {
@@ -1057,4 +1057,82 @@ textarea.form-control {
 .evidence-timeline {
     position: relative;
     padding: 20px 0;
+}
+
+/* ==================== CHAIN OF CUSTODY DISPLAY ==================== */
+
+/* Chain of Custody Styles */
+.coc-timeline {
+    position: relative;
+    padding-left: 0;
+}
+
+.coc-event-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.coc-event-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #007bff;
+}
+
+.coc-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    flex-shrink: 0;
+    font-size: 1.5rem;
+}
+
+.coc-acquired {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.coc-transferred {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.coc-accessed {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.coc-verified {
+    background: #e8f5e9;
+    color: #388e3c;
+}
+
+.coc-stored {
+    background: #fff9c4;
+    color: #f9a825;
+}
+
+.coc-disposed {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+.coc-content {
+    flex: 1;
+}
+
+.coc-details {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 10px;
+}
+
+.coc-details p:last-child {
+    margin-bottom: 0;
 }

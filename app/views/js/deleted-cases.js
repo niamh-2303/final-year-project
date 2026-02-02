@@ -142,7 +142,7 @@ function confirmPermanentDelete(caseId, caseName) {
     const confirmed = confirm(`⚠️ PERMANENT DELETION WARNING ⚠️\n\nAre you absolutely sure you want to PERMANENTLY delete case "${caseName}"?\n\nThis action CANNOT be undone and all case data will be lost forever.`);
     
     if (confirmed) {
-        const doubleConfirm = confirm(`This is your final warning!\n\nType "DELETE" in the next prompt to confirm permanent deletion.`);
+        const doubleConfirm = confirm(`This is your final warning!\n\n.`);
         if (doubleConfirm) {
             permanentDeleteCase(caseId);
         }

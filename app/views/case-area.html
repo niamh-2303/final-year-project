@@ -161,8 +161,14 @@
                             </li>
                             
                             <li class="nav-item investigator-only" role="presentation">
-                                <button class="nav-link" id="coc-tab" data-bs-toggle="tab" data-bs-target="#CoC" type="button" role="tab" aria-controls="CoC" aria-selected="false" aria-label="coc-tab">
-                                    <i class="bi bi-book"></i> Chain of Custody
+                                <button class="nav-link" id="audit-log-tab" data-bs-toggle="tab" data-bs-target="#auditLog" type="button" role="tab" aria-controls="auditLog" aria-selected="false" aria-label="audit-log-tab">
+                                    <i class="bi bi-journal-code"></i> Audit Log
+                                </button>
+                            </li>
+
+                            <li class="nav-item investigator-only" role="presentation">
+                                <button class="nav-link" id="chain-of-custody-tab" data-bs-toggle="tab" data-bs-target="#chainOfCustody" type="button" role="tab" aria-controls="chainOfCustody" aria-selected="false" aria-label="chain-of-custody-tab">
+                                    <i class="bi bi-shield-lock"></i> Chain of Custody
                                 </button>
                             </li>
                             
@@ -247,13 +253,13 @@
                     </div>
 
 
-                    <!-- Chain of Custody Tab -->
-                    <div class="tab-pane fade" id="CoC" role="tabpanel">
+                    <!-- System Audit Log Tab -->
+                    <div class="tab-pane fade" id="auditLog" role="tabpanel">
                         <div class="form-card case-page">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4 class="form-card-title mb-0">
-                                    <i class="bi bi-shield-lock"></i>
-                                    Chain of Custody Audit Log
+                                    <i class="bi bi-journal-code"></i>
+                                    System Audit Log
                                 </h4>
                                 <div class="btn-group" role="group">
                                     <button type="button" class="btn btn-outline-primary active" id="friendlyViewBtn" onclick="switchView('friendly')">
@@ -266,11 +272,11 @@
                             </div>
 
                             <!-- Security Info Banner -->
-                            <div class="alert alert-success d-flex align-items-center mb-4">
-                                <i class="bi bi-shield-check fs-4 me-3"></i>
+                            <div class="alert alert-info d-flex align-items-center mb-4">
+                                <i class="bi bi-info-circle fs-4 me-3"></i>
                                 <div>
-                                    <strong>Cryptographically Secured Audit Trail</strong><br>
-                                    <small>All events are timestamped, hashed, and cryptographically signed to ensure integrity and non-repudiation.</small>
+                                    <strong>Cryptographically Secured System Audit Trail</strong><br>
+                                    <small>This log records all system events, user actions, and case modifications. Each event is timestamped, hashed, and cryptographically linked to ensure integrity and non-repudiation. This is separate from the physical Chain of Custody for evidence handling.</small>
                                 </div>
                             </div>
 
@@ -364,6 +370,35 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chain of Custody Tab (NIST Compliant) -->
+                    <div class="tab-pane fade" id="chainOfCustody" role="tabpanel">
+                        <div class="form-card case-page">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="form-card-title mb-0">
+                                    <i class="bi bi-shield-lock"></i>
+                                    Chain of Custody
+                                </h4>
+                                <button class="btn btn-primary investigator-only" onclick="showAddCoCEventModal()">
+                                    <i class="bi bi-plus-circle"></i> Add CoC Event
+                                </button>
+                            </div>
+
+                            <!-- NIST Compliance Banner -->
+                            <div class="alert alert-info d-flex align-items-center mb-4">
+                                <i class="bi bi-info-circle fs-4 me-3"></i>
+                                <div>
+                                    <strong>NIST SP 800-86 Compliant Chain of Custody</strong><br>
+                                    <small>This log documents all custody transfers, access events, and integrity verifications for digital evidence in accordance with NIST guidelines. Each event records who possessed the evidence, when, where, why, and in what condition.</small>
+                                </div>
+                            </div>
+
+                            <!-- CoC Timeline -->
+                            <div id="cocTimeline" class="coc-timeline">
+                                <p class="text-muted">Loading chain of custody records...</p>
                             </div>
                         </div>
                     </div>
@@ -606,6 +641,135 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" onclick="addTool()">Add Tool</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add CoC Event Modal -->
+    <div class="modal fade" id="addCoCEventModal" tabindex="-1" aria-labelledby="addCoCEventModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCoCEventModalLabel">
+                        <i class="bi bi-shield-lock"></i> Add Chain of Custody Event
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="cocEventForm">
+                        <!-- Evidence Selection -->
+                        <div class="mb-3">
+                            <label for="cocEvidenceId" class="form-label">Evidence Item <span class="text-danger">*</span></label>
+                            <select class="form-select" id="cocEvidenceId" required>
+                                <option value="">Select evidence...</option>
+                            </select>
+                        </div>
+
+                        <!-- Event Type -->
+                        <div class="mb-3">
+                            <label for="cocEventType" class="form-label">Event Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="cocEventType" required onchange="updateCoCFormFields()">
+                                <option value="">Select event type...</option>
+                                <option value="ACQUIRED">Initial Acquisition</option>
+                                <option value="TRANSFERRED">Custody Transfer</option>
+                                <option value="ACCESSED">Access/Handling</option>
+                                <option value="VERIFIED">Hash Verification</option>
+                                <option value="STORED">Storage Change</option>
+                                <option value="DISPOSED">Final Disposition</option>
+                            </select>
+                        </div>
+
+                        <!-- Custody Transfer Fields (show for TRANSFERRED) -->
+                        <div id="transferFields" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="releasedBy" class="form-label">Released By</label>
+                                    <input type="text" class="form-control" id="releasedBy" placeholder="Name">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="releasedByRole" class="form-label">Role</label>
+                                    <input type="text" class="form-control" id="releasedByRole" placeholder="e.g., Lead Investigator">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="receivedBy" class="form-label">Received By</label>
+                                    <input type="text" class="form-control" id="receivedBy" placeholder="Name">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="receivedByRole" class="form-label">Role</label>
+                                    <input type="text" class="form-control" id="receivedByRole" placeholder="e.g., Forensic Analyst">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Access Type (show for ACCESSED) -->
+                        <div id="accessFields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="accessType" class="form-label">Access Type</label>
+                                <select class="form-select" id="accessType">
+                                    <option value="READ_ONLY">Read-Only Examination</option>
+                                    <option value="IMAGING">Forensic Imaging</option>
+                                    <option value="ANALYSIS">Analysis/Processing</option>
+                                    <option value="VERIFICATION">Integrity Verification</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Hash Verification Fields (show for VERIFIED) -->
+                        <div id="verificationFields" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="hashAlgorithm" class="form-label">Hash Algorithm</label>
+                                    <select class="form-select" id="hashAlgorithm">
+                                        <option value="SHA-256">SHA-256</option>
+                                        <option value="SHA-1">SHA-1</option>
+                                        <option value="MD5">MD5</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="hashMatch" class="form-label">Hash Match Result</label>
+                                    <select class="form-select" id="hashMatch">
+                                        <option value="true">Match - Integrity Verified</option>
+                                        <option value="false">Mismatch - Integrity Compromised</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Common Fields -->
+                        <div class="mb-3">
+                            <label for="cocReason" class="form-label">Reason/Purpose <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="cocReason" placeholder="e.g., Initial acquisition from suspect laptop" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="cocLocation" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="cocLocation" placeholder="e.g., Evidence Locker A3, Forensic Lab">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="cocCondition" class="form-label">Condition at Event</label>
+                            <textarea class="form-control" id="cocCondition" rows="2" placeholder="e.g., Sealed, powered off, no visible damage"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="cocSecurityControls" class="form-label">Security Controls</label>
+                            <input type="text" class="form-control" id="cocSecurityControls" placeholder="e.g., Locked cabinet, encrypted drive">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="cocNotes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="cocNotes" rows="3" placeholder="Any additional relevant information..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitCoCEvent()">
+                        <i class="bi bi-check-circle"></i> Add CoC Event
+                    </button>
                 </div>
             </div>
         </div>

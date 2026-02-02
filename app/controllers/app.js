@@ -1162,18 +1162,49 @@ app.delete('/api/cases/:id/permanent-delete', requireInvestigator, async (req, r
             });
         }
 
-        // Delete related records first (evidence, case_team, etc.)
+        // Delete related records in the correct order (due to foreign key constraints)
+        
+        // 1. Delete chain of custody records first
+        await sql`
+            DELETE FROM chain_of_custody
+            WHERE case_id = ${caseId}
+        `;
+
+        // 2. Delete audit log records
+        await sql`
+            DELETE FROM audit_log
+            WHERE case_id = ${caseId}
+        `;
+
+        // 3. Delete evidence timeline/findings/tools/details
+        await sql`
+            DELETE FROM case_findings
+            WHERE case_id = ${caseId}
+        `;
+
+        await sql`
+            DELETE FROM case_details
+            WHERE case_id = ${caseId}
+        `;
+
+        await sql`
+            DELETE FROM case_tools
+            WHERE case_id = ${caseId}
+        `;
+
+        // 4. Delete evidence
         await sql`
             DELETE FROM evidence
             WHERE case_id = ${caseId}
         `;
 
+        // 5. Delete team assignments
         await sql`
             DELETE FROM case_team
             WHERE case_id = ${caseId}
         `;
 
-        // Then delete the case itself
+        // 6. Finally delete the case itself
         await sql`
             DELETE FROM cases
             WHERE case_id = ${caseId}
@@ -1183,7 +1214,7 @@ app.delete('/api/cases/:id/permanent-delete', requireInvestigator, async (req, r
 
     } catch (err) {
         console.error("Error permanently deleting case:", err);
-        res.status(500).json({ success: false, msg: "Error permanently deleting case" });
+        res.status(500).json({ success: false, msg: "Error permanently deleting case: " + err.message });
     }
 });
 
@@ -1532,6 +1563,208 @@ app.get('/api/cases/:id/evidence-timeline', requireRole('investigator', 'client'
     } catch (err) {
         console.error("Error fetching timeline:", err);
         res.status(500).json({ success: false, msg: "Error fetching timeline" });
+    }
+});
+
+// ================ Chain of Custody Endpoints ====================
+
+// Get Chain of Custody for a case
+app.get('/api/cases/:id/chain-of-custody', requireRole('investigator', 'client'), async (req, res) => {
+    const caseId = req.params.id;
+    const userEmail = req.session.user;
+    const userRole = req.session.role;
+
+    try {
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        // Authorization check
+        const caseData = await sql`
+            SELECT investigator_id, client_id FROM cases WHERE case_id = ${caseId}
+        `;
+
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: "Case not found" });
+        }
+
+        let isAuthorized = false;
+        if (userRole === 'investigator') {
+            isAuthorized = caseData[0].investigator_id === userId;
+            if (!isAuthorized) {
+                const teamMember = await sql`
+                    SELECT * FROM case_team WHERE case_id = ${caseId} AND investigator_id = ${userId}
+                `;
+                isAuthorized = teamMember.length > 0;
+            }
+        } else if (userRole === 'client') {
+            isAuthorized = caseData[0].client_id === userId;
+        }
+
+        if (!isAuthorized) {
+            return res.status(403).json({ success: false, msg: "Access denied" });
+        }
+
+        // Fetch CoC records with evidence details
+        const cocRecords = await sql`
+            SELECT 
+                coc.*,
+                e.evidence_name,
+                e.file_hash as evidence_hash,
+                u1.first_name || ' ' || u1.last_name as created_by_name
+            FROM chain_of_custody coc
+            LEFT JOIN evidence e ON coc.evidence_id = e.evidence_id
+            LEFT JOIN users u1 ON coc.created_by = u1.user_id
+            WHERE coc.case_id = ${caseId}
+            ORDER BY coc.event_datetime DESC
+        `;
+
+        res.json({ success: true, cocRecords: cocRecords });
+
+    } catch (err) {
+        console.error("Error fetching CoC:", err);
+        res.status(500).json({ success: false, msg: "Error fetching chain of custody" });
+    }
+});
+
+// Add Chain of Custody event
+app.post('/api/cases/:id/chain-of-custody', requireInvestigator, async (req, res) => {
+    const caseId = req.params.id;
+    const userEmail = req.session.user;
+    const {
+        evidence_id,
+        event_type,
+        released_by_name,
+        released_by_role,
+        received_by_name,
+        received_by_role,
+        reason,
+        location,
+        condition_at_event,
+        access_type,
+        hash_algorithm,
+        hash_match,
+        security_controls,
+        notes
+    } = req.body;
+
+    try {
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        // Authorization check
+        const caseData = await sql`
+            SELECT investigator_id FROM cases WHERE case_id = ${caseId}
+        `;
+
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: "Case not found" });
+        }
+
+        let isAuthorized = caseData[0].investigator_id === userId;
+        if (!isAuthorized) {
+            const teamMember = await sql`
+                SELECT * FROM case_team WHERE case_id = ${caseId} AND investigator_id = ${userId}
+            `;
+            isAuthorized = teamMember.length > 0;
+        }
+
+        if (!isAuthorized) {
+            return res.status(403).json({ success: false, msg: "Access denied" });
+        }
+
+        // Get evidence hash for verification events
+        let hashValue = null;
+        let hashVerified = false;
+        
+        if (event_type === 'VERIFIED') {
+            const evidence = await sql`
+                SELECT file_hash FROM evidence WHERE evidence_id = ${evidence_id}
+            `;
+            if (evidence.length > 0) {
+                hashValue = evidence[0].file_hash;
+                hashVerified = true;
+            }
+        }
+
+        // Insert CoC record
+        const result = await sql`
+            INSERT INTO chain_of_custody (
+                evidence_id,
+                case_id,
+                event_type,
+                released_by_name,
+                released_by_role,
+                received_by_name,
+                received_by_role,
+                reason,
+                location,
+                condition_at_event,
+                access_type,
+                hash_verified,
+                hash_algorithm,
+                hash_value,
+                hash_match,
+                verification_datetime,
+                security_controls,
+                notes,
+                created_by
+            ) VALUES (
+                ${evidence_id},
+                ${caseId},
+                ${event_type},
+                ${released_by_name || null},
+                ${released_by_role || null},
+                ${received_by_name || null},
+                ${received_by_role || null},
+                ${reason},
+                ${location || null},
+                ${condition_at_event || null},
+                ${access_type || null},
+                ${hashVerified},
+                ${hash_algorithm || null},
+                ${hashValue},
+                ${hash_match === 'true' ? true : hash_match === 'false' ? false : null},
+                ${event_type === 'VERIFIED' ? new Date().toISOString() : null},
+                ${security_controls || null},
+                ${notes || null},
+                ${userId}
+            )
+            RETURNING *
+        `;
+
+        // Create audit log entry
+        await createAuditLog(
+            parseInt(caseId),
+            userId,
+            `COC_${event_type}`,
+            `Chain of Custody event: ${event_type} - ${reason}`
+        );
+
+        res.json({ success: true, msg: "CoC event added successfully", cocRecord: result[0] });
+
+    } catch (err) {
+        console.error("Error adding CoC event:", err);
+        res.status(500).json({ success: false, msg: "Error adding CoC event" });
+    }
+});
+
+// Get evidence list for CoC modal
+app.get('/api/cases/:id/evidence-list', requireInvestigator, async (req, res) => {
+    const caseId = req.params.id;
+
+    try {
+        const evidence = await sql`
+            SELECT evidence_id, evidence_name, file_hash
+            FROM evidence
+            WHERE case_id = ${caseId}
+            ORDER BY evidence_name ASC
+        `;
+
+        res.json({ success: true, evidence: evidence });
+
+    } catch (err) {
+        console.error("Error fetching evidence list:", err);
+        res.status(500).json({ success: false, msg: "Error fetching evidence list" });
     }
 });
 
