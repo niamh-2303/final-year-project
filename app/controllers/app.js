@@ -815,6 +815,13 @@ app.post('/api/upload-evidence', requireInvestigator, upload.single('file'), asy
         const filename = req.file.filename;
         const userEmail = req.session.user;
 
+        console.log('=== UPLOAD DEBUG ===');
+        console.log('case_id:', case_id);
+        console.log('file_hash:', file_hash);
+        console.log('evidence_summary:', evidence_summary);
+        console.log('filename:', filename);
+        console.log('EXIF data:', exif);
+
         //  Get user ID
         const user = await sql`
             SELECT user_id FROM users WHERE email = ${userEmail}
