@@ -713,6 +713,11 @@ textarea.form-control {
     color: #555;
 }
 
+.btn-blue-back {
+    background-color: #ede9e9;   /* pale light grey */
+    color: #333;
+    border-color: #d9d9d9;
+}
 /*changing button hover colour to overwrite bootstrap in case area "back to dashboard" */
 .btn-blue-back:hover,
 .btn-blue-back:focus {
