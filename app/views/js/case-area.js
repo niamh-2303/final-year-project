@@ -171,100 +171,353 @@ function generateMetadataRows(item) {
 }
 
 /* ======================================================
-   Load Evidence Log
+   ENHANCED EVIDENCE TAB FUNCTIONS
 ====================================================== */
-async function loadEvidenceLog(caseId) {
+
+let evidenceListData = [];
+let currentViewingEvidenceId = null;
+
+// Load evidence list (compact view)
+async function loadEvidenceList(caseId) {
+    showEvidenceLoading();
+    
     try {
         const response = await fetch(`/api/get-evidence?case_id=${caseId}`);
         const data = await response.json();
 
-        const container = document.getElementById('evidenceLogContainer');
-        container.innerHTML = '';
+        evidenceListData = data;
+        renderEvidenceList(data);
+        
+        // Update count badge
+        updateEvidenceCount(data.length);
 
-        if (data.length === 0) {
-            container.innerHTML = '<p class="text-muted">No evidence uploaded yet</p>';
-            return;
-        }
-
-        data.forEach((item, index) => {
-            let filename = item.file_path;
-            if (filename.includes('\\') || filename.includes('/')) {
-                filename = filename.split('\\').pop().split('/').pop();
-            }
-            
-            const evidenceCard = document.createElement('div');
-            evidenceCard.className = 'card mb-3';
-            evidenceCard.innerHTML = `
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="bi bi-file-earmark"></i> ${item.evidence_name}
-                    </h5>
-                    <button class="btn btn-sm btn-outline-primary" onclick="toggleDetails(${index})">
-                        <i class="bi bi-chevron-down" id="chevron-${index}"></i> Details
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <img src="/uploads/${filename}" 
-                                 class="img-fluid rounded" 
-                                 alt="Evidence preview"
-                                 id="evidence-img-${index}">
-                        </div>
-                        <div class="col-md-8">
-                            <table class="table table-sm">
-                                <tr>
-                                    <th style="width: 200px;">File Hash (SHA-256)</th>
-                                    <td><code style="word-break: break-all; font-size: 0.85em;">${item.file_hash || 'Hash not available'}</code></td>
-                                </tr>
-                                <tr>
-                                    <th>Description</th>
-                                    <td>${item.description || 'No description provided'}</td>
-                                </tr>
-                                <tr>
-                                    <th>Uploaded</th>
-                                    <td>${new Date(item.collected_at).toLocaleString()}</td>
-                                </tr>
-                                <tr>
-                                    <th>File Path</th>
-                                    <td><small class="text-muted">${filename}</small></td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <div id="details-${index}" class="mt-3" style="display: none;">
-                        <hr>
-                        <h6><strong>Detailed EXIF Metadata</strong></h6>
-                        <table class="table table-striped table-sm">
-                            <thead>
-                                <tr>
-                                    <th style="width: 200px;">Property</th>
-                                    <th>Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${generateMetadataRows(item)}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-            
-            container.appendChild(evidenceCard);
-            
-            const img = document.getElementById(`evidence-img-${index}`);
-            img.onerror = function() {
-                console.log('Failed to load image:', `/uploads/${filename}`);
-                this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3EImage not found%3C/text%3E%3C/svg%3E';
-            };
-        });
     } catch (err) {
-        console.error('Error loading evidence log:', err);
-        const container = document.getElementById('evidenceLogContainer');
-        container.innerHTML = '<p class="text-danger">Error loading evidence log</p>';
+        console.error('Error loading evidence list:', err);
+        showEvidenceError();
     }
 }
+
+// Show loading state
+function showEvidenceLoading() {
+    const container = document.getElementById('evidenceListContainer');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="evidence-loading">
+            <div class="evidence-loading-spinner"></div>
+            <p>Loading evidence...</p>
+        </div>
+    `;
+}
+
+// Show error state
+function showEvidenceError() {
+    const container = document.getElementById('evidenceListContainer');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="evidence-empty-state">
+            <i class="bi bi-exclamation-triangle"></i>
+            <h5>Error Loading Evidence</h5>
+            <p>There was a problem loading the evidence list. Please try again.</p>
+            <button class="btn btn-primary mt-3" onclick="loadEvidenceList(caseID)">
+                <i class="bi bi-arrow-clockwise"></i> Retry
+            </button>
+        </div>
+    `;
+}
+
+// Update evidence count badge
+function updateEvidenceCount(count) {
+    const badge = document.getElementById('evidenceCountBadge');
+    if (badge) {
+        badge.textContent = count;
+    }
+}
+
+// Render evidence list
+function renderEvidenceList(evidenceArray) {
+    const container = document.getElementById('evidenceListContainer');
+    if (!container) return;
+    
+    if (evidenceArray.length === 0) {
+        container.innerHTML = `
+            <div class="evidence-empty-state">
+                <i class="bi bi-file-earmark"></i>
+                <h5>No Evidence Files</h5>
+                <p>No evidence has been uploaded to this case yet.</p>
+                <button class="btn btn-primary" onclick="document.getElementById('evidence-upload-tab').click()">
+                    <i class="bi bi-upload"></i> Upload Evidence
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHTML = `
+        <table class="evidence-table">
+            <thead>
+                <tr>
+                    <th>Evidence Name</th>
+                    <th>Date Collected</th>
+                    <th>File Hash</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    evidenceArray.forEach((item) => {
+        const filename = extractFilename(item.file_path);
+        const dateCollected = new Date(item.collected_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        const hashShort = item.file_hash ? item.file_hash.substring(0, 16) + '...' : 'N/A';
+        const description = item.description || 'No description';
+        
+        tableHTML += `
+            <tr onclick="viewEvidenceDetails(${item.evidence_id})">
+                <td>
+                    <div class="evidence-item-info">
+                        <div class="evidence-icon">
+                            <i class="bi bi-file-earmark-image"></i>
+                        </div>
+                        <div class="evidence-name-wrapper">
+                            <div class="evidence-name">${item.evidence_name}</div>
+                            <div class="evidence-description">${description}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="evidence-date">
+                        <i class="bi bi-calendar"></i>
+                        ${dateCollected}
+                    </div>
+                </td>
+                <td class="evidence-hash-cell">
+                    <span class="evidence-hash-short">${hashShort}</span>
+                </td>
+                <td>
+                    <button class="evidence-view-btn" onclick="event.stopPropagation(); viewEvidenceDetails(${item.evidence_id})">
+                        <i class="bi bi-eye"></i>
+                        View Details
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += `
+            </tbody>
+        </table>
+    `;
+    
+    container.innerHTML = tableHTML;
+}
+
+// Extract filename from path
+function extractFilename(filepath) {
+    if (!filepath) return 'Unknown';
+    if (filepath.includes('\\') || filepath.includes('/')) {
+        return filepath.split('\\').pop().split('/').pop();
+    }
+    return filepath;
+}
+
+// View evidence details (opens modal and logs to audit)
+async function viewEvidenceDetails(evidenceId) {
+    // Find evidence item
+    const evidence = evidenceListData.find(e => e.evidence_id === evidenceId);
+    if (!evidence) {
+        console.error('Evidence not found:', evidenceId);
+        return;
+    }
+    
+    // Set current viewing evidence
+    currentViewingEvidenceId = evidenceId;
+    
+    // Log the view action to audit log
+    await logEvidenceView(evidenceId, evidence.evidence_name);
+    
+    // Populate and show modal
+    populateEvidenceModal(evidence);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('evidenceDetailModal'));
+    modal.show();
+}
+
+// Log evidence view to audit log
+async function logEvidenceView(evidenceId, evidenceName) {
+    try {
+        // Get user info
+        const userResponse = await fetch('/get-user-info');
+        const userData = await userResponse.json();
+        
+        if (!userData.success) {
+            console.error('Could not get user info for audit log');
+            return;
+        }
+        
+        // Log to backend audit log
+        const response = await fetch(`/api/evidence/${evidenceId}/log-view`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                case_id: caseID,
+                evidence_id: evidenceId,
+                evidence_name: evidenceName
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            console.log(`Evidence view logged: ${evidenceName}`);
+        }
+        
+    } catch (error) {
+        console.error('Error logging evidence view:', error);
+        // Don't block the modal from opening if logging fails
+    }
+}
+
+// Populate evidence detail modal
+function populateEvidenceModal(evidence) {
+    const filename = extractFilename(evidence.file_path);
+    
+    // Set modal title
+    document.getElementById('evidenceModalTitle').textContent = evidence.evidence_name;
+    
+    // Image preview
+    const imagePreview = document.getElementById('evidenceImagePreview');
+    imagePreview.innerHTML = `
+        <img src="/uploads/${filename}" 
+             alt="${evidence.evidence_name}"
+             onerror="this.parentElement.innerHTML='<div class=\\'evidence-image-placeholder\\'><i class=\\'bi bi-image\\' style=\\'font-size: 64px; color: #dee2e6;\\'></i><p>Image preview not available</p></div>'">
+    `;
+    
+    // File information
+    document.getElementById('evidenceFileName').textContent = evidence.evidence_name;
+    document.getElementById('evidenceFileSize').textContent = formatFileSize(evidence.file_size) || 'N/A';
+    document.getElementById('evidenceFileType').textContent = evidence.file_type || 'N/A';
+    document.getElementById('evidenceCollectedDate').textContent = new Date(evidence.collected_at).toLocaleString();
+    
+    // Full hash
+    document.getElementById('evidenceFullHash').innerHTML = `<code>${evidence.file_hash || 'N/A'}</code>`;
+    
+    // Description
+    const descriptionEl = document.getElementById('evidenceFullDescription');
+    if (evidence.description) {
+        descriptionEl.innerHTML = `<div class="evidence-description-full">${evidence.description}</div>`;
+    } else {
+        descriptionEl.innerHTML = `<div class="text-muted">No description provided</div>`;
+    }
+    
+    // Metadata
+    populateMetadataTable(evidence);
+}
+
+// Populate metadata table
+function populateMetadataTable(evidence) {
+    const tbody = document.getElementById('evidenceMetadataBody');
+    tbody.innerHTML = '';
+    
+    const metadataFields = [
+        { label: 'Camera Make', value: evidence.make },
+        { label: 'Camera Model', value: evidence.model },
+        { label: 'Date Taken', value: evidence.datetime_original ? new Date(evidence.datetime_original).toLocaleString() : null },
+        { label: 'Date Digitized', value: evidence.datetime_digitized ? new Date(evidence.datetime_digitized).toLocaleString() : null },
+        { label: 'Orientation', value: evidence.orientation },
+        { label: 'Resolution (X)', value: evidence.x_resolution },
+        { label: 'Resolution (Y)', value: evidence.y_resolution },
+        { label: 'Software', value: evidence.software },
+        { label: 'Artist/Author', value: evidence.artist },
+        { label: 'Copyright', value: evidence.copyright },
+        { label: 'Exposure Time', value: evidence.exposure_time },
+        { label: 'F-Number', value: evidence.f_number },
+        { label: 'ISO Speed', value: evidence.iso },
+        { label: 'Focal Length', value: evidence.focal_length },
+        { label: 'Flash', value: evidence.flash },
+        { label: 'White Balance', value: evidence.white_balance },
+        { label: 'Image Width', value: evidence.pixel_x_dimension },
+        { label: 'Image Height', value: evidence.pixel_y_dimension }
+    ];
+    
+    let hasMetadata = false;
+    
+    metadataFields.forEach(field => {
+        if (field.value !== null && field.value !== undefined && field.value !== '') {
+            hasMetadata = true;
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td><strong>${field.label}</strong></td>
+                <td>${field.value}</td>
+            `;
+        }
+    });
+    
+    if (!hasMetadata) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="2" class="text-muted text-center">No EXIF metadata available</td>
+            </tr>
+        `;
+    }
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (!bytes) return null;
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// Download evidence file
+function downloadEvidenceFile() {
+    if (!currentViewingEvidenceId) return;
+    
+    const evidence = evidenceListData.find(e => e.evidence_id === currentViewingEvidenceId);
+    if (!evidence) return;
+    
+    const filename = extractFilename(evidence.file_path);
+    const link = document.createElement('a');
+    link.href = `/uploads/${filename}`;
+    link.download = evidence.evidence_name;
+    link.click();
+}
+
+// Close modal
+function closeEvidenceModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('evidenceDetailModal'));
+    if (modal) {
+        modal.hide();
+    }
+    currentViewingEvidenceId = null;
+}
+
+// Initialize when evidence tab is shown
+document.addEventListener('DOMContentLoaded', function() {
+    const evidenceTab = document.getElementById('evidence-tab');
+    if (evidenceTab) {
+        evidenceTab.addEventListener('shown.bs.tab', function() {
+            if (caseID) {
+                loadEvidenceList(caseID);
+            }
+        });
+    }
+});
+
+// Make functions globally available
+window.viewEvidenceDetails = viewEvidenceDetails;
+window.downloadEvidenceFile = downloadEvidenceFile;
+window.closeEvidenceModal = closeEvidenceModal;
 
 /* ======================================================
    ON PAGE LOAD — SINGLE DOMContentLoaded
@@ -282,7 +535,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     await loadCaseData();
     
     // Load evidence log
-    loadEvidenceLog(caseID);
+    loadEvidenceList(caseID);
 
     // Attach file upload handlers
     attachFileUploadHandlers();
@@ -395,7 +648,7 @@ function attachFileUploadHandlers() {
                 fileHash = null;
                 document.getElementById('evidenceSummary').value = '';
 
-                loadEvidenceLog(caseID);
+                loadEvidenceList(caseID);
             } else {
                 alert('Upload failed: ' + (result.message || 'Unknown error'));
             }
@@ -1392,7 +1645,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     await loadCaseData();
-    loadEvidenceLog(caseID);
+    loadEvidenceList(caseID);
     loadOverview();
     loadFindings();
     loadTools();

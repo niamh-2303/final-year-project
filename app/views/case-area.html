@@ -452,13 +452,35 @@
 
                     <!-- Evidence Log Tab -->
                     <div class="tab-pane fade" id="evidence" role="tabpanel">
-                        <div class="form-card case-page">
-                            <h4 class="form-card-title">
-                                <i class="bi bi-file-earmark-text"></i>
-                                Evidence Log
-                            </h4>
-                            <div id="evidenceLogContainer">
-                                <p class="text-muted">No evidence uploaded yet</p>
+                        <div class="evidence-list-container">
+                            <!-- Header -->
+                            <div class="evidence-list-header">
+                                <h4>
+                                    <i class="bi bi-file-earmark-text"></i>
+                                    Evidence Files
+                                    <span class="evidence-count-badge" id="evidenceCountBadge">0</span>
+                                </h4>
+                            </div>
+
+                            <!-- Audit Alert -->
+                            <div style="padding: 24px 32px 0 32px;">
+                                <div class="evidence-audit-alert">
+                                    <i class="bi bi-shield-check"></i>
+                                    <div class="evidence-audit-alert-text">
+                                        <strong>Access Tracking Enabled:</strong> All evidence views are logged to the audit trail for compliance and chain of custody documentation.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Evidence List Table -->
+                            <div class="evidence-table-wrapper">
+                                <div id="evidenceListContainer">
+                                    <!-- Table will be dynamically inserted here -->
+                                    <div class="evidence-loading">
+                                        <div class="evidence-loading-spinner"></div>
+                                        <p>Loading evidence...</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -760,6 +782,111 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" onclick="submitCoCEvent()">
                         <i class="bi bi-check-circle"></i> Add CoC Event
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evidence Detail Modal -->
+    <div class="modal fade evidence-detail-modal" id="evidenceDetailModal" tabindex="-1" aria-labelledby="evidenceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h5 class="modal-title" id="evidenceModalLabel">
+                        <i class="bi bi-file-earmark-lock"></i>
+                        <span id="evidenceModalTitle">Evidence Details</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="modal-body">
+                    <!-- Image Preview Section -->
+                    <div class="evidence-detail-section">
+                        <h5>
+                            <i class="bi bi-image"></i>
+                            Image Preview
+                        </h5>
+                        <div class="evidence-image-preview" id="evidenceImagePreview">
+                            <!-- Image will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- File Information Section -->
+                    <div class="evidence-detail-section">
+                        <h5>
+                            <i class="bi bi-info-circle"></i>
+                            File Information
+                        </h5>
+                        <div class="evidence-info-grid">
+                            <div class="evidence-info-item">
+                                <div class="evidence-info-label">File Name</div>
+                                <div class="evidence-info-value" id="evidenceFileName">-</div>
+                            </div>
+                            <div class="evidence-info-item">
+                                <div class="evidence-info-label">File Size</div>
+                                <div class="evidence-info-value" id="evidenceFileSize">-</div>
+                            </div>
+                            <div class="evidence-info-item">
+                                <div class="evidence-info-label">File Type</div>
+                                <div class="evidence-info-value" id="evidenceFileType">-</div>
+                            </div>
+                            <div class="evidence-info-item">
+                                <div class="evidence-info-label">Date Collected</div>
+                                <div class="evidence-info-value" id="evidenceCollectedDate">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hash Section -->
+                    <div class="evidence-detail-section">
+                        <h5>
+                            <i class="bi bi-shield-check"></i>
+                            File Hash (SHA-256)
+                        </h5>
+                        <div class="evidence-info-value" id="evidenceFullHash">
+                            <code>-</code>
+                        </div>
+                    </div>
+
+                    <!-- Description Section -->
+                    <div class="evidence-detail-section">
+                        <h5>
+                            <i class="bi bi-file-text"></i>
+                            Description
+                        </h5>
+                        <div id="evidenceFullDescription">
+                            <div class="text-muted">No description provided</div>
+                        </div>
+                    </div>
+
+                    <!-- EXIF Metadata Section -->
+                    <div class="evidence-detail-section">
+                        <h5>
+                            <i class="bi bi-list-ul"></i>
+                            EXIF Metadata
+                        </h5>
+                        <table class="metadata-table">
+                            <tbody id="evidenceMetadataBody">
+                                <tr>
+                                    <td colspan="2" class="text-muted text-center">Loading metadata...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="modal-footer">
+                    <button type="button" class="evidence-action-btn secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i>
+                        Close
+                    </button>
+                    <button type="button" class="evidence-action-btn primary" onclick="downloadEvidenceFile()">
+                        <i class="bi bi-download"></i>
+                        Download File
                     </button>
                 </div>
             </div>

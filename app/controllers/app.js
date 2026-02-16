@@ -1775,6 +1775,79 @@ app.get('/api/cases/:id/evidence-list', requireInvestigator, async (req, res) =>
     }
 });
 
+// ===== EVIDENCE VIEW LOGGING ENDPOINT =====
+// Log evidence view (when someone opens evidence details)
+app.post('/api/evidence/:evidenceId/log-view', requireRole('investigator', 'client'), async (req, res) => {
+    const evidenceId = req.params.evidenceId;
+    const { case_id, evidence_name } = req.body;
+    const userEmail = req.session.user;
+    const userRole = req.session.role;
+
+    try {
+        // Get user ID
+        const user = await sql`
+            SELECT user_id FROM users WHERE email = ${userEmail}
+        `;
+        
+        if (user.length === 0) {
+            return res.status(404).json({ success: false, msg: "User not found" });
+        }
+        
+        const userId = user[0].user_id;
+
+        // Verify authorization for this case
+        const caseData = await sql`
+            SELECT investigator_id, client_id FROM cases WHERE case_id = ${case_id}
+        `;
+
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: "Case not found" });
+        }
+
+        // Authorization check
+        let isAuthorized = false;
+        if (userRole === 'investigator') {
+            isAuthorized = caseData[0].investigator_id === userId;
+            if (!isAuthorized) {
+                const teamMember = await sql`
+                    SELECT * FROM case_team 
+                    WHERE case_id = ${case_id} 
+                    AND investigator_id = ${userId}
+                `;
+                isAuthorized = teamMember.length > 0;
+            }
+        } else if (userRole === 'client') {
+            isAuthorized = caseData[0].client_id === userId;
+        }
+
+        if (!isAuthorized) {
+            return res.status(403).json({ 
+                success: false, 
+                msg: "Access denied" 
+            });
+        }
+
+        // Create audit log entry for evidence view
+        await createAuditLog(
+            parseInt(case_id),
+            userId,
+            'EVIDENCE_ACCESSED',
+            `Evidence "${evidence_name}" (ID: ${evidenceId}) was viewed`
+        );
+
+        res.json({ 
+            success: true, 
+            msg: "Evidence view logged successfully" 
+        });
+
+    } catch (err) {
+        console.error("Error logging evidence view:", err);
+        res.status(500).json({ 
+            success: false, 
+            msg: "Error logging evidence view" 
+        });
+    }
+});
 
 // ================ ERROR HANDLING ====================
 
