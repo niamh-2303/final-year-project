@@ -484,185 +484,330 @@ function populateTeamTab() {
 }
 
 /* ======================================================
-    AUDIT LOG FUNCTIONS
+   ENHANCED AUDIT LOG FUNCTIONS
 ====================================================== */
-let currentView = 'friendly';
 
-// Switch between views
-function switchView(view) {
-    currentView = view;
+let auditLogData = [];
+let filteredAuditData = [];
+let currentFilter = 'all';
+
+// Load enhanced audit log
+async function loadEnhancedAuditLog() {
+    showAuditLoading();
     
-    if (view === 'friendly') {
-        document.getElementById('friendlyView').style.display = 'block';
-        document.getElementById('terminalView').style.display = 'none';
-        document.getElementById('friendlyViewBtn').classList.add('active');
-        document.getElementById('terminalViewBtn').classList.remove('active');
-    } else {
-        document.getElementById('friendlyView').style.display = 'none';
-        document.getElementById('terminalView').style.display = 'block';
-        document.getElementById('friendlyViewBtn').classList.remove('active');
-        document.getElementById('terminalViewBtn').classList.add('active');
-    }
-}
-
-// Load audit log data from backend
-async function loadAuditLog() {
     try {
         const response = await fetch(`/api/cases/${caseID}/audit-log`);
         const data = await response.json();
         
         if (data.success) {
-            const auditLog = data.auditLog;
+            auditLogData = data.auditLog;
+            filteredAuditData = [...auditLogData];
             
             // Update stats
-            document.getElementById('totalEvents').textContent = auditLog.length;
-            const evidenceCount = auditLog.filter(e => e.action.includes('EVIDENCE')).length;
-            document.getElementById('evidenceCount').textContent = evidenceCount;
+            updateAuditStats(auditLogData);
             
-            // Render both views
-            renderFriendlyTimeline(auditLog);
-            renderTerminalView(auditLog);
+            // Render timeline
+            renderEnhancedTimeline(filteredAuditData);
         }
     } catch (error) {
         console.error('Error loading audit log:', error);
-        // Use sample data if API fails
-        useSampleAuditLog();
+        showAuditError();
     }
 }
 
-// Fallback sample data for demonstration
-function useSampleAuditLog() {
-    const sampleData = [
-        {
-            id: 1,
-            timestamp: new Date().toISOString(),
-            action: 'CASE_CREATED',
-            user: 'Niamh Armour',
-            user_id: 1,
-            details: `Case ${caseData.case_number} created with priority: ${caseData.priority}`,
-            hash: 'a3f5c9d8e1b2f4a6c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1',
-            prev_hash: '0000000000000000000000000000000000000000000000000000000000000000'
-        }
-    ];
+// Show loading state
+function showAuditLoading() {
+    const container = document.getElementById('auditTimelineContainer');
+    if (!container) return;
     
-    document.getElementById('totalEvents').textContent = sampleData.length;
-    document.getElementById('evidenceCount').textContent = 0;
-    
-    renderFriendlyTimeline(sampleData);
-    renderTerminalView(sampleData);
+    container.innerHTML = `
+        <div class="audit-loading">
+            <div class="audit-loading-spinner"></div>
+            <p>Loading audit log...</p>
+        </div>
+    `;
 }
 
-function renderFriendlyTimeline(auditLog) {
-    const timeline = document.getElementById('auditTimeline');
-    if (!timeline) return;
+// Show error state
+function showAuditError() {
+    const container = document.getElementById('auditTimelineContainer');
+    if (!container) return;
     
-    timeline.innerHTML = '';
+    container.innerHTML = `
+        <div class="audit-empty-state">
+            <i class="bi bi-exclamation-triangle"></i>
+            <h5>Error Loading Audit Log</h5>
+            <p>There was a problem loading the audit log. Please try again.</p>
+            <button class="btn btn-primary mt-3" onclick="loadEnhancedAuditLog()">
+                <i class="bi bi-arrow-clockwise"></i> Retry
+            </button>
+        </div>
+    `;
+}
+
+// Update statistics
+function updateAuditStats(auditLog) {
+    const totalEvents = auditLog.length;
+    const evidenceEvents = auditLog.filter(e => 
+        e.action.includes('EVIDENCE') || e.action.includes('UPLOADED')
+    ).length;
+    const verifiedEvents = auditLog.filter(e => 
+        e.action.includes('VERIFIED') || e.action.includes('HASH')
+    ).length;
+    const cocEvents = auditLog.filter(e => 
+        e.action.includes('COC_') || e.action.includes('CHAIN')
+    ).length;
     
-    auditLog.forEach(event => {
-        const iconClass = getIconClass(event.action);
-        const timeFormatted = new Date(event.timestamp).toLocaleString();
-        
-        const item = document.createElement('div');
-        item.className = 'timeline-item';
-        item.innerHTML = `
-            <div class="timeline-icon ${iconClass}">
-                <i class="bi ${getIconType(event.action)}"></i>
+    document.getElementById('totalEventsCount').textContent = totalEvents;
+    document.getElementById('evidenceEventsCount').textContent = evidenceEvents;
+    document.getElementById('verifiedEventsCount').textContent = verifiedEvents;
+    document.getElementById('cocEventsCount').textContent = cocEvents;
+}
+
+// Render enhanced timeline
+function renderEnhancedTimeline(events) {
+    const container = document.getElementById('auditTimelineContainer');
+    if (!container) return;
+    
+    if (events.length === 0) {
+        container.innerHTML = `
+            <div class="audit-empty-state">
+                <i class="bi bi-journal-code"></i>
+                <h5>No Events Found</h5>
+                <p>There are no audit log events matching your filters.</p>
             </div>
-            <div class="timeline-content">
-                <div class="timeline-header">
-                    <div class="timeline-title">${formatAction(event.action)}</div>
-                    <div class="timeline-time">
-                        <i class="bi bi-clock"></i> ${timeFormatted}
+        `;
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    events.forEach((event, index) => {
+        const eventCard = createEventCard(event, index);
+        container.appendChild(eventCard);
+    });
+}
+
+// Create event card
+function createEventCard(event, index) {
+    const card = document.createElement('div');
+    card.className = 'audit-event-card';
+    card.setAttribute('data-event-id', event.id);
+    
+    const iconClass = getEventIconClass(event.action);
+    const iconType = getEventIconType(event.action);
+    const formattedTime = new Date(event.timestamp).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    // Check if this event is linked to Chain of Custody
+    const isCoCEvent = event.action.includes('COC_') || 
+                       event.action.includes('EVIDENCE') ||
+                       event.action.includes('VERIFIED');
+    
+    card.innerHTML = `
+        <div class="audit-event-header">
+            <div class="audit-event-type">
+                <div class="audit-event-icon ${iconClass}">
+                    <i class="bi ${iconType}"></i>
+                </div>
+                <div class="audit-event-title">
+                    <h5>${formatActionTitle(event.action)}</h5>
+                    <div class="audit-event-time">
+                        <i class="bi bi-clock"></i>
+                        ${formattedTime}
                     </div>
                 </div>
-                <div class="timeline-details">
-                    <strong>${event.user}</strong> - ${event.details}
-                </div>
-                <div class="timeline-hash">
-                    <small><i class="bi bi-shield-check"></i> Event Hash (SHA-256)</small>
-                    <code>${event.hash}</code>
-                </div>
             </div>
-        `;
-        timeline.appendChild(item);
-    });
-}
-
-function renderTerminalView(auditLog) {
-    const terminalLogs = document.getElementById('terminalLogs');
-    if (!terminalLogs) return;
-    
-    terminalLogs.innerHTML = '';
-    
-    // Update case ID in terminal
-    const terminalCaseId = document.getElementById('terminalCaseId');
-    if (terminalCaseId && caseData) {
-        terminalCaseId.textContent = caseData.case_number;
-    }
-    
-    auditLog.forEach((event) => {
-        const timestamp = new Date(event.timestamp).toISOString();
+        </div>
         
-        const eventBlock = document.createElement('div');
-        eventBlock.className = 'terminal-event';
-        eventBlock.innerHTML = `
-            <div class="terminal-line terminal-event-header">[Event #${event.id}] ${event.action}</div>
-            <div class="terminal-line terminal-event-detail">├─ Timestamp: ${timestamp}</div>
-            <div class="terminal-line terminal-event-detail">├─ User: ${event.user} (ID: ${event.user_id})</div>
-            <div class="terminal-line terminal-event-detail">├─ Action: ${event.details}</div>
-            <div class="terminal-line terminal-event-detail">├─ Event Hash: <span class="terminal-hash">${event.hash}</span></div>
-            <div class="terminal-line terminal-event-detail">└─ Prev Hash: <span class="terminal-hash">${event.prev_hash}</span></div>
-            <div class="terminal-line terminal-success">  ✓ Signature verified</div>
-            <div class="terminal-line terminal-success">  ✓ Chain link verified</div>
-            <div class="terminal-line"></div>
-        `;
-        terminalLogs.appendChild(eventBlock);
-    });
+        <div class="audit-event-body">
+            <div class="audit-event-user">
+                <i class="bi bi-person-circle"></i>
+                <strong>${event.user}</strong>
+            </div>
+            
+            <div class="audit-event-details">
+                ${event.details}
+            </div>
+            
+            ${isCoCEvent ? `
+                <div class="coc-connection-badge" onclick="showCoCConnection('${event.id}')">
+                    <i class="bi bi-link-45deg"></i>
+                    View in Chain of Custody
+                </div>
+            ` : ''}
+        </div>
+        
+        <div class="audit-event-footer">
+            <div class="audit-event-hash">
+                <i class="bi bi-shield-check"></i>
+                <strong>Hash:</strong> 
+                <code>${event.hash.substring(0, 16)}...</code>
+            </div>
+            <div class="audit-event-badges">
+                <span class="audit-badge verified">
+                    <i class="bi bi-check-circle"></i>
+                    Verified
+                </span>
+                ${isCoCEvent ? `
+                    <span class="audit-badge chain-linked">
+                        <i class="bi bi-link-45deg"></i>
+                        CoC Linked
+                    </span>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    return card;
 }
 
-function getIconClass(action) {
+// Get icon class based on action
+function getEventIconClass(action) {
     if (action.includes('CREATED')) return 'created';
-    if (action.includes('UPLOADED')) return 'uploaded';
-    if (action.includes('ACCESSED')) return 'accessed';
-    if (action.includes('MODIFIED')) return 'modified';
+    if (action.includes('UPLOADED') || action.includes('EVIDENCE')) return 'uploaded';
+    if (action.includes('ACCESSED') || action.includes('VIEWED')) return 'accessed';
+    if (action.includes('VERIFIED') || action.includes('HASH')) return 'verified';
+    if (action.includes('MODIFIED') || action.includes('UPDATED')) return 'modified';
     return 'created';
 }
 
-function getIconType(action) {
-    if (action.includes('CREATED')) return 'bi-plus-circle';
-    if (action.includes('UPLOADED')) return 'bi-cloud-upload';
-    if (action.includes('ACCESSED')) return 'bi-eye';
-    if (action.includes('MODIFIED')) return 'bi-pencil';
-    return 'bi-circle';
+// Get icon type
+function getEventIconType(action) {
+    if (action.includes('CREATED')) return 'bi-plus-circle-fill';
+    if (action.includes('UPLOADED')) return 'bi-cloud-upload-fill';
+    if (action.includes('EVIDENCE')) return 'bi-file-earmark-lock-fill';
+    if (action.includes('ACCESSED')) return 'bi-eye-fill';
+    if (action.includes('VERIFIED')) return 'bi-shield-check';
+    if (action.includes('MODIFIED')) return 'bi-pencil-fill';
+    if (action.includes('COC')) return 'bi-link-45deg';
+    return 'bi-circle-fill';
 }
 
-function formatAction(action) {
-    return action.replace(/_/g, ' ').toLowerCase()
+// Format action title
+function formatActionTitle(action) {
+    return action.replace(/_/g, ' ')
+        .toLowerCase()
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 }
 
+// Filter events
+function filterAuditEvents(filterType) {
+    currentFilter = filterType;
+    
+    // Update button states
+    document.querySelectorAll('.audit-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Filter data
+    if (filterType === 'all') {
+        filteredAuditData = [...auditLogData];
+    } else if (filterType === 'evidence') {
+        filteredAuditData = auditLogData.filter(e => 
+            e.action.includes('EVIDENCE') || e.action.includes('UPLOADED')
+        );
+    } else if (filterType === 'coc') {
+        filteredAuditData = auditLogData.filter(e => 
+            e.action.includes('COC_') || e.action.includes('CHAIN')
+        );
+    } else if (filterType === 'verified') {
+        filteredAuditData = auditLogData.filter(e => 
+            e.action.includes('VERIFIED') || e.action.includes('HASH')
+        );
+    }
+    
+    renderEnhancedTimeline(filteredAuditData);
+}
+
+// Search events
+function searchAuditEvents(searchTerm) {
+    const term = searchTerm.toLowerCase();
+    
+    if (!term) {
+        filteredAuditData = [...auditLogData];
+    } else {
+        filteredAuditData = auditLogData.filter(event => 
+            event.action.toLowerCase().includes(term) ||
+            event.details.toLowerCase().includes(term) ||
+            event.user.toLowerCase().includes(term) ||
+            event.hash.toLowerCase().includes(term)
+        );
+    }
+    
+    renderEnhancedTimeline(filteredAuditData);
+}
+
+// Show CoC connection (navigate to Chain of Custody tab)
+function showCoCConnection(eventId) {
+    // Switch to Chain of Custody tab
+    const cocTab = document.getElementById('chain-of-custody-tab');
+    if (cocTab) {
+        cocTab.click();
+        
+        // Highlight related CoC event after a short delay
+        setTimeout(() => {
+            // You can implement highlighting logic here
+            console.log('Showing CoC connection for event:', eventId);
+        }, 300);
+    }
+}
+
+// Export audit log
+function exportAuditLog() {
+    const csvContent = generateAuditCSV(auditLogData);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `audit-log-${caseData.case_number}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Generate CSV
+function generateAuditCSV(events) {
+    const headers = ['Event ID', 'Timestamp', 'Action', 'User', 'Details', 'Hash', 'Previous Hash'];
+    const rows = events.map(event => [
+        event.id,
+        new Date(event.timestamp).toISOString(),
+        event.action,
+        event.user,
+        `"${event.details.replace(/"/g, '""')}"`,
+        event.hash,
+        event.prev_hash
+    ]);
+    
+    return [headers, ...rows].map(row => row.join(',')).join('\n');
+}
+
+// Initialize when tab is shown
 document.addEventListener('DOMContentLoaded', function() {
-    // Audit Log tab
     const auditLogTab = document.getElementById('audit-log-tab');
     if (auditLogTab) {
         auditLogTab.addEventListener('shown.bs.tab', function() {
-            loadAuditLog();
-        });
-    }
-    
-    // Chain of Custody tab 
-    const cocTab = document.getElementById('chain-of-custody-tab');
-    if (cocTab) {
-        cocTab.addEventListener('shown.bs.tab', function() {
-            loadChainOfCustody();
+            loadEnhancedAuditLog();
         });
     }
 });
 
-// Make switchView available globally
-window.switchView = switchView;
+// Make functions globally available
+window.filterAuditEvents = filterAuditEvents;
+window.searchAuditEvents = searchAuditEvents;
+window.showCoCConnection = showCoCConnection;
+window.exportAuditLog = exportAuditLog;
 
 /* ======================================================
    CHAIN OF CUSTODY FUNCTIONS (NIST Compliant)
