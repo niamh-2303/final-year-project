@@ -519,27 +519,6 @@ window.viewEvidenceDetails = viewEvidenceDetails;
 window.downloadEvidenceFile = downloadEvidenceFile;
 window.closeEvidenceModal = closeEvidenceModal;
 
-/* ======================================================
-   ON PAGE LOAD — SINGLE DOMContentLoaded
-====================================================== */
-window.addEventListener("DOMContentLoaded", async () => {
-    const params = new URLSearchParams(window.location.search);
-    caseID = params.get("id");
-
-    if (!caseID) {
-        alert("No case ID found. Redirecting...");
-        window.location.href = "dashboard.html";
-        return;
-    }
-
-    await loadCaseData();
-    
-    // Load evidence log
-    loadEvidenceList(caseID);
-
-    // Attach file upload handlers
-    attachFileUploadHandlers();
-});
 
 function attachFileUploadHandlers() {
     const fileInput = document.getElementById('fileInput');
