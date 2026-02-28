@@ -554,22 +554,23 @@ app.get('/api/my-cases', requireRole('investigator', 'client'), async (req, res)
         if (userRole === 'investigator') {
             // Investigators see cases they're assigned to (exclude deleted)
             cases = await sql`
-                SELECT 
-                    c.case_id,
-                    c.case_number,
-                    c.case_name,
-                    c.description,
-                    c.priority,
-                    c.status,
-                    c.created_at,
-                    c.is_deleted,
-                    cl.first_name || ' ' || cl.last_name AS client_name
-                FROM cases c
-                LEFT JOIN users cl ON c.client_id = cl.user_id
-                WHERE c.investigator_id = ${userID}
-                AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
-                ORDER BY c.created_at DESC
-            `;
+            SELECT DISTINCT
+                c.case_id,
+                c.case_number,
+                c.case_name,
+                c.description,
+                c.priority,
+                c.status,
+                c.created_at,
+                c.is_deleted,
+                cl.first_name || ' ' || cl.last_name AS client_name
+            FROM cases c
+            LEFT JOIN users cl ON c.client_id = cl.user_id
+            LEFT JOIN case_team ct ON ct.case_id = c.case_id
+            WHERE (c.investigator_id = ${userID} OR ct.investigator_id = ${userID})
+            AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
+            ORDER BY c.created_at DESC
+        `;
         } else if (userRole === 'client') {
             // Clients see only their own cases (exclude deleted)
             cases = await sql`
