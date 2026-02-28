@@ -105,11 +105,11 @@ function createCaseRow(caseData) {
                 <button class="btn btn-sm btn-outline-primary" onclick="viewCase(${caseData.case_id})" title="View Case">
                     <i class="bi bi-eye"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="editCase(${caseData.case_id})" title="Edit Case">
+                <button class="btn btn-sm btn-outline-success" onclick="editCase(${caseData.case_id})" title="Edit Case">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteCase(${caseData.case_id}, '${caseData.case_name}')" title="Delete Case">
-                    <i class="bi bi-trash"></i>
+                <button class="btn btn-sm btn-outline-secondary" onclick="confirmDeleteCase(${caseData.case_id}, '${caseData.case_name}')" title="Delete Case">
+                    <i class="bi bi-folder"></i>
                 </button>
             </td>
         </tr>

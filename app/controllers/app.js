@@ -586,6 +586,7 @@ app.get('/api/my-cases', requireRole('investigator', 'client'), async (req, res)
                 LEFT JOIN users inv ON c.investigator_id = inv.user_id
                 WHERE c.client_id = ${userID}
                 AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
+                AND c.client_access = TRUE
                 ORDER BY c.created_at DESC
             `;
         }
@@ -624,7 +625,7 @@ app.get("/api/search-investigator", requireInvestigator, async (req, res) => {
 
 // Create case with team members
 app.post("/api/create-case-with-team", requireInvestigator, async (req, res) => {
-    const { caseNumber, caseName, caseType, clientID, priority, status, teamMembers } = req.body;
+    const { caseNumber, caseName, caseType, clientID, priority, status, teamMembers, clientAccess } = req.body;
 
     console.log("Received case data with team:", { caseNumber, caseName, caseType, clientID, priority, status, teamMembers });
 
@@ -650,12 +651,12 @@ app.post("/api/create-case-with-team", requireInvestigator, async (req, res) => 
 
         // Insert case into database
         const caseResult = await sql`
-            INSERT INTO cases 
-                (case_number, case_name, description, client_id, investigator_id, priority, status, created_at)
-            VALUES 
-                (${caseNumber}, ${caseName}, ${caseType}, ${clientID}, ${investigatorID}, ${priority}, ${status}, NOW())
-            RETURNING case_id
-        `;
+        INSERT INTO cases 
+            (case_number, case_name, description, client_id, investigator_id, priority, status, client_access, created_at)
+        VALUES 
+            (${caseNumber}, ${caseName}, ${caseType}, ${clientID}, ${investigatorID}, ${priority}, ${status}, ${clientAccess ?? true}, NOW())
+        RETURNING case_id
+    `;
 
         const caseID = caseResult[0].case_id;
 
@@ -704,6 +705,7 @@ app.get('/api/case/:id', requireRole('investigator', 'client'), async (req, res)
                 c.status,
                 c.created_at,
                 c.client_id,
+                c.client_access,
                 c.investigator_id AS lead_investigator_id
             FROM cases c
             WHERE c.case_id = ${caseId}
@@ -740,8 +742,8 @@ app.get('/api/case/:id', requireRole('investigator', 'client'), async (req, res)
                 }
             }
         } else if (userRole === 'client') {
-            // Check if user is the client for this case
-            if (caseData.client_id === userId) {
+            // Check if user is the client AND access is enabled
+            if (caseData.client_id === userId && caseData.client_access === true) {
                 isAuthorized = true;
             }
         }

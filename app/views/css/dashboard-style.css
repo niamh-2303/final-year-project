@@ -1158,7 +1158,7 @@ textarea.form-control {
 /* Header Section */
 .audit-log-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 24px 32px;
+    padding: 20px 30px;
     color: white;
 }
 
@@ -2004,7 +2004,7 @@ textarea.form-control {
     background: #d1ecf1;
     border: 1px solid #bee5eb;
     border-radius: 8px;
-    padding: 12px 16px;
+    padding: 6px 12px;
     display: flex;
     align-items: center;
     gap: 12px;

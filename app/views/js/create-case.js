@@ -93,7 +93,7 @@ clientSearchInput.addEventListener("input", async () => {
 });
 
 // ==============================
-// Handle form submission - Save data and go to assign team (NEW LOGIC)
+// Handle form submission - Save data and go to assign team 
 // ==============================
 async function createCase() {
     const caseName = document.getElementById("caseName").value.trim();
@@ -102,6 +102,7 @@ async function createCase() {
     const clientID = document.getElementById("clientID").value;
     const priority = document.getElementById("priority").value;
     const status = document.getElementById("status").value;
+    const clientAccess = document.getElementById("clientAccessToggle").checked;
 
     console.log("Form data:", { caseName, caseNumber, caseType, clientID, priority, status });
 
@@ -118,7 +119,8 @@ async function createCase() {
         caseType,
         clientID,
         priority,
-        status
+        status,
+        clientAccess
     };
 
     // The key is 'tempCaseData'
