@@ -552,27 +552,36 @@ app.get('/api/my-cases', requireRole('investigator', 'client'), async (req, res)
         let cases;
 
         if (userRole === 'investigator') {
-            // Investigators see cases they're assigned to (exclude deleted)
             cases = await sql`
-            SELECT DISTINCT
-                c.case_id,
-                c.case_number,
-                c.case_name,
-                c.description,
-                c.priority,
-                c.status,
-                c.created_at,
-                c.is_deleted,
-                cl.first_name || ' ' || cl.last_name AS client_name
-            FROM cases c
-            LEFT JOIN users cl ON c.client_id = cl.user_id
-            LEFT JOIN case_team ct ON ct.case_id = c.case_id
-            WHERE (c.investigator_id = ${userID} OR ct.investigator_id = ${userID})
-            AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
-            ORDER BY c.created_at DESC
-        `;
+                SELECT DISTINCT
+                    c.case_id,
+                    c.case_number,
+                    c.case_name,
+                    c.description,
+                    c.priority,
+                    c.status,
+                    c.created_at,
+                    c.is_deleted,
+                    cl.first_name || ' ' || cl.last_name AS client_name
+                FROM cases c
+                LEFT JOIN users cl ON c.client_id = cl.user_id
+                LEFT JOIN case_team ct ON ct.case_id = c.case_id
+                WHERE (
+                    c.investigator_id = ${userID}  -- lead investigator always sees it
+                    OR (
+                        ct.investigator_id = ${userID}
+                        AND EXISTS (
+                            SELECT 1 FROM case_invitations ci
+                            WHERE ci.case_id = c.case_id
+                            AND ci.user_id = ${userID}
+                            AND ci.status = 'accepted'
+                        )
+                    )
+                )
+                AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
+                ORDER BY c.created_at DESC
+            `;
         } else if (userRole === 'client') {
-            // Clients see only their own cases (exclude deleted)
             cases = await sql`
                 SELECT 
                     c.case_id,
@@ -588,6 +597,12 @@ app.get('/api/my-cases', requireRole('investigator', 'client'), async (req, res)
                 WHERE c.client_id = ${userID}
                 AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
                 AND c.client_access = TRUE
+                AND EXISTS (
+                    SELECT 1 FROM case_invitations ci
+                    WHERE ci.case_id = c.case_id
+                    AND ci.user_id = ${userID}
+                    AND ci.status = 'accepted'
+                )
                 ORDER BY c.created_at DESC
             `;
         }
@@ -665,10 +680,18 @@ app.post("/api/create-case-with-team", requireInvestigator, async (req, res) => 
         if (teamMembers && teamMembers.length > 0) {
             for (const memberID of teamMembers) {
                 await sql`
-                    INSERT INTO case_team (case_id, investigator_id)
-                    VALUES (${caseID}, ${memberID})
+                    INSERT INTO case_invitations (case_id, user_id, invited_by, role)
+                    VALUES (${caseID}, ${memberID}, ${investigatorID}, 'investigator')
                 `;
             }
+        }
+
+        //send client invitation if clientAccess is true
+        if (clientAccess) {
+            await sql`
+                INSERT INTO case_invitations (case_id, user_id, invited_by, role)
+                VALUES (${caseID}, ${clientID}, ${investigatorID}, 'client')
+            `;
         }
 
         // CREATE AUDIT LOG ENTRY 
@@ -1849,6 +1872,109 @@ app.post('/api/evidence/:evidenceId/log-view', requireRole('investigator', 'clie
             success: false, 
             msg: "Error logging evidence view" 
         });
+    }
+});
+
+// ================ Pending Innvitations ====================
+
+app.get('/api/my-invitations', requireRole('investigator', 'client'), async (req, res) => {
+    const userEmail = req.session.user;
+
+    try {
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        const invitations = await sql`
+            SELECT 
+                ci.invitation_id,
+                ci.case_id,
+                ci.role,
+                ci.created_at,
+                c.case_name,
+                c.case_number,
+                c.priority,
+                c.status,
+                u.first_name || ' ' || u.last_name AS invited_by_name
+            FROM case_invitations ci
+            JOIN cases c ON ci.case_id = c.case_id
+            JOIN users u ON ci.invited_by = u.user_id
+            WHERE ci.user_id = ${userId}
+            AND ci.status = 'pending'
+            ORDER BY ci.created_at DESC
+        `;
+
+        res.json({ success: true, invitations });
+
+    } catch (err) {
+        console.error("Error fetching invitations:", err);
+        res.status(500).json({ success: false, msg: "Error fetching invitations" });
+    }
+});
+
+// ================ Respond to Investigations ====================
+
+app.post('/api/invitations/:id/respond', requireRole('investigator', 'client'), async (req, res) => {
+    const invitationId = req.params.id;
+    const { action } = req.body; // 'accept' or 'decline'
+    const userEmail = req.session.user;
+    const userRole = req.session.role;
+
+    try {
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        // Verify this invitation belongs to this user
+        const invitation = await sql`
+            SELECT * FROM case_invitations 
+            WHERE invitation_id = ${invitationId} AND user_id = ${userId} AND status = 'pending'
+        `;
+
+        if (invitation.length === 0) {
+            return res.status(404).json({ success: false, msg: "Invitation not found" });
+        }
+
+        const inv = invitation[0];
+
+        if (action === 'accept') {
+            // Add to the appropriate table
+            if (inv.role === 'investigator') {
+                await sql`
+                    INSERT INTO case_team (case_id, investigator_id)
+                    VALUES (${inv.case_id}, ${userId})
+                    ON CONFLICT DO NOTHING
+                `;
+            }
+            // For clients, client_access is already true on the case
+            // so no extra insert needed - they just gain dashboard visibility
+
+            await createAuditLog(
+                inv.case_id,
+                userId,
+                'INVITATION_ACCEPTED',
+                `User accepted ${inv.role} invitation for the case`
+            );
+        } else {
+            await createAuditLog(
+                inv.case_id,
+                userId,
+                'INVITATION_DECLINED',
+                `User declined ${inv.role} invitation for the case`
+            );
+        }
+
+        // Update invitation status
+        await sql`
+            UPDATE case_invitations
+            SET status = ${action === 'accept' ? 'accepted' : 'declined'},
+                responded_at = NOW()
+            WHERE invitation_id = ${invitationId}
+        `;
+
+        res.json({ success: true, msg: `Invitation ${action}ed successfully` });
+
+    } catch (err) {
+        console.error("Error responding to invitation:", err);
+        res.status(500).json({ success: false, msg: "Error responding to invitation" });
     }
 });
 
