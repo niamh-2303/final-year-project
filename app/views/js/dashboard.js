@@ -108,7 +108,7 @@ function createCaseRow(caseData) {
                 <button class="btn btn-sm btn-outline-success" onclick="editCase(${caseData.case_id})" title="Edit Case">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="confirmDeleteCase(${caseData.case_id}, '${caseData.case_name}')" title="Delete Case">
+                <button class="btn btn-sm btn-outline-secondary" onclick="confirmArchiveCase(${caseData.case_id}, '${caseData.case_name}')" title="Archive Case">
                     <i class="bi bi-folder"></i>
                 </button>
             </td>
@@ -192,7 +192,7 @@ async function respondToInvitation(invitationId, action) {
                 'success'
             );
             loadInvitations(); // refresh requests tab
-            loadCases();       // refresh cases tab (use loadClientCases() in client-cases.js)
+            loadCases();       // refresh cases tab 
         } else {
             showNotification('Error: ' + data.msg, 'error');
         }
@@ -201,26 +201,24 @@ async function respondToInvitation(invitationId, action) {
     }
 }
 
-// Confirm deletion with modal
-function confirmDeleteCase(caseId, caseName) {
-    const confirmed = confirm(`Are you sure you want to delete case "${caseName}"?\n\nThis case will be moved to Deleted Cases and can be restored within 90 days.`);
+// Confirm archive with modal
+function confirmArchiveCase(caseId, caseName) {
+    const confirmed = confirm(`Are you sure you want to archive case "${caseName}"?\n\nThis case will be moved to Archived Cases.`);
     
     if (confirmed) {
-        deleteCase(caseId);
+        archiveCase(caseId);
     }
 }
 
-// Delete case (soft delete)
-async function deleteCase(caseId) {
+// Archive Case
+async function archiveCase(caseId) {
     try {
-        const response = await fetch(`/api/cases/${caseId}/delete`, {
+        const response = await fetch(`/api/cases/${caseId}/archive`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                is_deleted: true,
-                deleted_at: new Date().toISOString()
+                is_archived: true,          
+                archived_at: new Date().toISOString()  
             })
         });
 
@@ -228,16 +226,16 @@ async function deleteCase(caseId) {
 
         if (data.success) {
             // Show success message
-            showNotification('Case moved to Deleted Cases successfully', 'success');
+            showNotification('Case moved to Archive Cases successfully', 'success');
             
             // Reload cases to refresh the view
             loadCases();
         } else {
-            showNotification('Failed to delete case: ' + data.message, 'error');
+            showNotification('Failed to archive case: ' + data.message, 'error');
         }
     } catch (error) {
-        console.error('Error deleting case:', error);
-        showNotification('Error deleting case', 'error');
+        console.error('Error archiving case:', error);
+        showNotification('Error archiving case', 'error');
     }
 }
 

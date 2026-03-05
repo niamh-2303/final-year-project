@@ -166,12 +166,11 @@ app.get('/assign-team.html', requireInvestigator, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/assign-team.html'));
 });
 
-app.get('/deleted-cases', requireInvestigator, (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/deleted-cases.html'));
+app.get('/archive-cases', requireInvestigator, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/archive-cases.html'));
 });
-
-app.get('/deleted-cases.html', requireInvestigator, (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/deleted-cases.html'));
+app.get('/archive-cases.html', requireInvestigator, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/archive-cases.html'));
 });
 
 //================ CLIENT-ONLY ROUTES ====================
@@ -561,7 +560,7 @@ app.get('/api/my-cases', requireRole('investigator', 'client'), async (req, res)
                     c.priority,
                     c.status,
                     c.created_at,
-                    c.is_deleted,
+                    c.is_archived,
                     cl.first_name || ' ' || cl.last_name AS client_name
                 FROM cases c
                 LEFT JOIN users cl ON c.client_id = cl.user_id
@@ -578,7 +577,7 @@ app.get('/api/my-cases', requireRole('investigator', 'client'), async (req, res)
                         )
                     )
                 )
-                AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
+                AND (c.is_archived = FALSE OR c.is_archived IS NULL)
                 ORDER BY c.created_at DESC
             `;
         } else if (userRole === 'client') {
@@ -595,7 +594,7 @@ app.get('/api/my-cases', requireRole('investigator', 'client'), async (req, res)
                 FROM cases c
                 LEFT JOIN users inv ON c.investigator_id = inv.user_id
                 WHERE c.client_id = ${userID}
-                AND (c.is_deleted = FALSE OR c.is_deleted IS NULL)
+                AND (c.is_archived = FALSE OR c.is_archived IS NULL)
                 AND c.client_access = TRUE
                 AND EXISTS (
                     SELECT 1 FROM case_invitations ci
@@ -1033,97 +1032,71 @@ app.get('/api/get-evidence', requireRole('investigator', 'client'), async (req, 
     }
 });
 
-// Soft delete a case (move to deleted cases)
-app.post('/api/cases/:id/delete', requireInvestigator, async (req, res) => {
+// Soft archive a case (move to archived cases)
+app.post('/api/cases/:id/archive', requireInvestigator, async (req, res) => {
     const caseId = req.params.id;
-    const { is_deleted, deleted_at } = req.body;
+    const { is_archived, archived_at } = req.body;
     const userEmail = req.session.user;
 
     try {
-        // Get user ID
-        const user = await sql`
-            SELECT user_id FROM users WHERE email = ${userEmail}
-        `;
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
         const userId = user[0].user_id;
 
-        // Check if user is authorized to delete this case (must be lead investigator)
-        const caseData = await sql`
-            SELECT investigator_id FROM cases WHERE case_id = ${caseId}
-        `;
+        const caseData = await sql`SELECT investigator_id FROM cases WHERE case_id = ${caseId}`;
 
-        if (caseData.length === 0) {
-            return res.status(404).json({ success: false, msg: "Case not found" });
-        }
+        if (caseData.length === 0) return res.status(404).json({ success: false, msg: "Case not found" });
 
         if (caseData[0].investigator_id !== userId) {
-            return res.status(403).json({ 
-                success: false, 
-                msg: "Access denied: Only the lead investigator can delete this case" 
-            });
+            return res.status(403).json({ success: false, msg: "Access denied: Only the lead investigator can archive this case" });
         }
 
-        // Delete the case
         await sql`
             UPDATE cases
-            SET is_deleted = ${is_deleted},
-                deleted_at = ${deleted_at}
+            SET is_archived = ${is_archived},
+                archived_at = ${archived_at}
             WHERE case_id = ${caseId}
         `;
 
-        res.json({ success: true, msg: "Case moved to deleted cases" });
+        res.json({ success: true, msg: "Case moved to archive" });
 
     } catch (err) {
-        console.error("Error deleting case:", err);
-        res.status(500).json({ success: false, msg: "Error deleting case" });
+        console.error("Error archiving case:", err);
+        res.status(500).json({ success: false, msg: "Error archiving case" });
     }
 });
 
-// Get deleted cases for current user
-app.get('/api/my-cases/deleted', requireInvestigator, async (req, res) => {
+// Get archived cases for current user
+app.get('/api/my-cases/archived', requireInvestigator, async (req, res) => {
     try {
         const investigatorEmail = req.session.user;
+        const investigator = await sql`SELECT user_id FROM users WHERE email = ${investigatorEmail}`;
 
-        const investigator = await sql`
-            SELECT user_id 
-            FROM users 
-            WHERE email = ${investigatorEmail}
-        `;
-
-        if (investigator.length === 0) {
-            return res.status(404).json({ msg: "User not found" });
-        }
+        if (investigator.length === 0) return res.status(404).json({ msg: "User not found" });
 
         const investigatorID = investigator[0].user_id;
 
-        // Fetch only deleted cases
         const cases = await sql`
             SELECT 
-                c.case_id,
-                c.case_number,
-                c.case_name,
-                c.description,
-                c.priority,
-                c.status,
-                c.created_at,
-                c.deleted_at,
+                c.case_id, c.case_number, c.case_name, c.description,
+                c.priority, c.status, c.created_at, c.archived_at,
                 cl.first_name || ' ' || cl.last_name AS client_name
             FROM cases c
             LEFT JOIN users cl ON c.client_id = cl.user_id
             WHERE c.investigator_id = ${investigatorID}
-            AND c.is_deleted = TRUE
-            ORDER BY c.deleted_at DESC
+            AND c.is_archived = TRUE
+            ORDER BY c.archived_at DESC
         `;
 
-        res.json({ success: true, cases: cases });
+        res.json({ success: true, cases });
 
     } catch (err) {
-        console.error("Error fetching deleted cases:", err);
-        res.status(500).json({ success: false, msg: "Error fetching deleted cases" });
+        console.error("Error fetching archived cases:", err);
+        res.status(500).json({ success: false, msg: "Error fetching archived cases" });
     }
 });
 
 
-// Restore a deleted case
+// Restore an archived case
 app.post('/api/cases/:id/restore', requireInvestigator, async (req, res) => {
     const caseId = req.params.id;
     const userEmail = req.session.user;
@@ -1153,101 +1126,17 @@ app.post('/api/cases/:id/restore', requireInvestigator, async (req, res) => {
 
         // Restore the case
         await sql`
-            UPDATE cases
-            SET is_deleted = FALSE,
-                deleted_at = NULL
-            WHERE case_id = ${caseId}
-        `;
+        UPDATE cases
+        SET is_archived = FALSE,
+            archived_at = NULL
+        WHERE case_id = ${caseId}
+    `;
 
         res.json({ success: true, msg: "Case restored successfully" });
 
     } catch (err) {
         console.error("Error restoring case:", err);
         res.status(500).json({ success: false, msg: "Error restoring case" });
-    }
-});
-
-// Permanently delete a case
-app.delete('/api/cases/:id/permanent-delete', requireInvestigator, async (req, res) => {
-    const caseId = req.params.id;
-    const userEmail = req.session.user;
-
-    try {
-        // Get user ID
-        const user = await sql`
-            SELECT user_id FROM users WHERE email = ${userEmail}
-        `;
-        const userId = user[0].user_id;
-
-        // Check if user is authorized (must be lead investigator)
-        const caseData = await sql`
-            SELECT investigator_id FROM cases WHERE case_id = ${caseId}
-        `;
-
-        if (caseData.length === 0) {
-            return res.status(404).json({ success: false, msg: "Case not found" });
-        }
-
-        if (caseData[0].investigator_id !== userId) {
-            return res.status(403).json({ 
-                success: false, 
-                msg: "Access denied: Only the lead investigator can permanently delete this case" 
-            });
-        }
-
-        // Delete related records in the correct order (due to foreign key constraints)
-        
-        // 1. Delete chain of custody records first
-        await sql`
-            DELETE FROM chain_of_custody
-            WHERE case_id = ${caseId}
-        `;
-
-        // 2. Delete audit log records
-        await sql`
-            DELETE FROM audit_log
-            WHERE case_id = ${caseId}
-        `;
-
-        // 3. Delete evidence timeline/findings/tools/details
-        await sql`
-            DELETE FROM case_findings
-            WHERE case_id = ${caseId}
-        `;
-
-        await sql`
-            DELETE FROM case_details
-            WHERE case_id = ${caseId}
-        `;
-
-        await sql`
-            DELETE FROM case_tools
-            WHERE case_id = ${caseId}
-        `;
-
-        // 4. Delete evidence
-        await sql`
-            DELETE FROM evidence
-            WHERE case_id = ${caseId}
-        `;
-
-        // 5. Delete team assignments
-        await sql`
-            DELETE FROM case_team
-            WHERE case_id = ${caseId}
-        `;
-
-        // 6. Finally delete the case itself
-        await sql`
-            DELETE FROM cases
-            WHERE case_id = ${caseId}
-        `;
-
-        res.json({ success: true, msg: "Case permanently deleted" });
-
-    } catch (err) {
-        console.error("Error permanently deleting case:", err);
-        res.status(500).json({ success: false, msg: "Error permanently deleting case: " + err.message });
     }
 });
 
