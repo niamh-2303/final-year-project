@@ -260,7 +260,7 @@
 
                             <!-- Statistics Row -->
                             <div class="audit-stats-row">
-                                <div class="audit-stat-card">
+                                <div class="audit-stat-card" onclick="filterAuditEvents('all')" id="statAll" style="cursor:pointer;">
                                     <div class="audit-stat-icon total">
                                         <i class="bi bi-activity"></i>
                                     </div>
@@ -270,7 +270,7 @@
                                     </div>
                                 </div>
 
-                                <div class="audit-stat-card">
+                                <div class="audit-stat-card" onclick="filterAuditEvents('evidence')" id="statEvidence" style="cursor:pointer;">
                                     <div class="audit-stat-icon evidence">
                                         <i class="bi bi-file-earmark-lock"></i>
                                     </div>
@@ -280,7 +280,7 @@
                                     </div>
                                 </div>
 
-                                <div class="audit-stat-card">
+                                <div class="audit-stat-card" onclick="filterAuditEvents('verified')" id="statVerified" style="cursor:pointer;">
                                     <div class="audit-stat-icon verified">
                                         <i class="bi bi-shield-check"></i>
                                     </div>
@@ -290,7 +290,7 @@
                                     </div>
                                 </div>
 
-                                <div class="audit-stat-card">
+                                <div class="audit-stat-card" onclick="filterAuditEvents('coc')" id="statCoc" style="cursor:pointer;">
                                     <div class="audit-stat-icon chain">
                                         <i class="bi bi-link-45deg"></i>
                                     </div>
@@ -312,26 +312,6 @@
                                         onkeyup="searchAuditEvents(this.value)"
                                     >
                                 </div>
-
-                                <div class="audit-filter-buttons">
-                                    <button class="audit-filter-btn active" onclick="filterAuditEvents('all')">
-                                        <i class="bi bi-list-ul"></i>
-                                        All Events
-                                    </button>
-                                    <button class="audit-filter-btn" onclick="filterAuditEvents('evidence')">
-                                        <i class="bi bi-file-earmark"></i>
-                                        Evidence
-                                    </button>
-                                    <button class="audit-filter-btn" onclick="filterAuditEvents('coc')">
-                                        <i class="bi bi-link-45deg"></i>
-                                        Chain of Custody
-                                    </button>
-                                    <button class="audit-filter-btn" onclick="filterAuditEvents('verified')">
-                                        <i class="bi bi-shield-check"></i>
-                                        Verified
-                                    </button>
-                                </div>
-
                                 <button class="audit-export-btn" onclick="exportAuditLog()">
                                     <i class="bi bi-download"></i>
                                     Export Log
@@ -886,6 +866,47 @@
             </div>
         </div>
     </div>
+
+    <!-- Audit Filter Modal -->
+<div class="modal fade" id="auditFilterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" id="auditFilterModalHeader" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title" id="auditFilterModalTitle">
+                    <i class="bi bi-journal-code"></i>
+                    <span id="auditFilterModalTitleText">Events</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Search inside modal -->
+                <div style="padding: 16px 24px; border-bottom: 1px solid #e9ecef; background: #f8f9fa;">
+                    <div class="audit-search" style="max-width: 100%;">
+                        <i class="bi bi-search"></i>
+                        <input 
+                            type="text" 
+                            id="modalAuditSearch"
+                            placeholder="Search within these events..." 
+                            onkeyup="searchModalEvents(this.value)"
+                            style="width: 100%;"
+                        >
+                    </div>
+                </div>
+                <!-- Events container -->
+                <div id="auditModalEventsContainer" style="padding: 20px 24px; max-height: 600px; overflow-y: auto;">
+                    <p class="text-muted">Loading...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span class="text-muted me-auto" id="auditModalEventCount">0 events</span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="audit-export-btn" onclick="exportAuditLog()">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

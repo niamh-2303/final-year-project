@@ -246,9 +246,6 @@ function renderEvidenceList(evidenceArray) {
                 <i class="bi bi-file-earmark"></i>
                 <h5>No Evidence Files</h5>
                 <p>No evidence has been uploaded to this case yet.</p>
-                <button class="btn btn-primary" onclick="document.getElementById('evidence-upload-tab').click()">
-                    <i class="bi bi-upload"></i> Upload Evidence
-                </button>
             </div>
         `;
         return;
@@ -734,12 +731,11 @@ async function loadEnhancedAuditLog() {
         if (data.success) {
             auditLogData = data.auditLog;
             filteredAuditData = [...auditLogData];
-            
-            // Update stats
             updateAuditStats(auditLogData);
-            
-            // Render timeline
             renderEnhancedTimeline(filteredAuditData);
+            
+            // Highlight "Total Events" card by default
+            filterAuditEvents('all');
         }
     } catch (error) {
         console.error('Error loading audit log:', error);
@@ -933,32 +929,113 @@ function formatActionTitle(action) {
 // Filter events
 function filterAuditEvents(filterType) {
     currentFilter = filterType;
-    
-    // Update button states
-    document.querySelectorAll('.audit-filter-btn').forEach(btn => {
-        btn.classList.remove('active');
+
+    // Reset all stat cards
+    document.querySelectorAll('.audit-stat-card').forEach(card => {
+        card.style.border = '1px solid #e9ecef';
+        card.style.transform = '';
+        card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
     });
-    event.target.classList.add('active');
-    
+
+    // Highlight active stat card
+    const activeMap = {
+        'all': 'statAll',
+        'evidence': 'statEvidence',
+        'verified': 'statVerified',
+        'coc': 'statCoc'
+    };
+    const activeCard = document.getElementById(activeMap[filterType]);
+    if (activeCard) {
+        activeCard.style.border = '2px solid #667eea';
+        activeCard.style.transform = 'translateY(-2px)';
+        activeCard.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
+    }
+
     // Filter data
     if (filterType === 'all') {
         filteredAuditData = [...auditLogData];
-    } else if (filterType === 'evidence') {
-        filteredAuditData = auditLogData.filter(e => 
+        // "All" just updates the main timeline, no popup
+        renderEnhancedTimeline(filteredAuditData);
+        return;
+    }
+
+    if (filterType === 'evidence') {
+        filteredAuditData = auditLogData.filter(e =>
             e.action.includes('EVIDENCE') || e.action.includes('UPLOADED')
         );
+        openAuditModal('Evidence Events', 'bi-file-earmark-lock', filteredAuditData);
     } else if (filterType === 'coc') {
-        filteredAuditData = auditLogData.filter(e => 
+        filteredAuditData = auditLogData.filter(e =>
             e.action.includes('COC_') || e.action.includes('CHAIN')
         );
+        openAuditModal('Chain of Custody Events', 'bi-link-45deg', filteredAuditData);
     } else if (filterType === 'verified') {
-        filteredAuditData = auditLogData.filter(e => 
+        filteredAuditData = auditLogData.filter(e =>
             e.action.includes('VERIFIED') || e.action.includes('HASH')
         );
+        openAuditModal('Verified Events', 'bi-shield-check', filteredAuditData);
     }
-    
-    renderEnhancedTimeline(filteredAuditData);
 }
+
+// Open modal with filtered events
+let currentModalEvents = [];
+
+function openAuditModal(title, icon, events) {
+    currentModalEvents = events;
+
+    // Set title
+    document.getElementById('auditFilterModalTitleText').textContent = title;
+    document.querySelector('#auditFilterModalTitle i').className = `bi ${icon}`;
+
+    // Clear search
+    document.getElementById('modalAuditSearch').value = '';
+
+    // Render events
+    renderModalEvents(events);
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('auditFilterModal'));
+    modal.show();
+}
+
+function renderModalEvents(events) {
+    const container = document.getElementById('auditModalEventsContainer');
+    document.getElementById('auditModalEventCount').textContent = `${events.length} event${events.length !== 1 ? 's' : ''}`;
+
+    if (events.length === 0) {
+        container.innerHTML = `
+            <div class="audit-empty-state">
+                <i class="bi bi-journal-code"></i>
+                <h5>No Events Found</h5>
+                <p>No events match this filter.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+    events.forEach((event, index) => {
+        const card = createEventCard(event, index);
+        container.appendChild(card);
+    });
+}
+
+function searchModalEvents(searchTerm) {
+    const term = searchTerm.toLowerCase();
+    if (!term) {
+        renderModalEvents(currentModalEvents);
+        return;
+    }
+    const filtered = currentModalEvents.filter(e =>
+        e.action.toLowerCase().includes(term) ||
+        e.details.toLowerCase().includes(term) ||
+        e.user.toLowerCase().includes(term) ||
+        e.hash.toLowerCase().includes(term)
+    );
+    renderModalEvents(filtered);
+}
+
+window.searchModalEvents = searchModalEvents;
 
 // Search events
 function searchAuditEvents(searchTerm) {
