@@ -1386,23 +1386,6 @@ window.submitCoCEvent = submitCoCEvent;
 ====================================================== */
 let originalOverview = '';
 
-async function loadOverview() {
-    try {
-        const response = await fetch(`/api/cases/${caseID}/overview`);
-        const data = await response.json();
-        
-        if (data.success) {
-            const overview = data.overview.overview || 'No overview has been added yet.';
-            document.getElementById('overviewDisplay').innerHTML = `<p>${overview.replace(/\n/g, '<br>')}</p>`;
-            document.getElementById('overviewTextarea').value = overview;
-            originalOverview = overview;
-        }
-    } catch (error) {
-        console.error('Error loading overview:', error);
-        document.getElementById('overviewDisplay').innerHTML = '<p class="text-danger">Error loading overview</p>';
-    }
-}
-
 function toggleEditOverview() {
     document.getElementById('overviewDisplay').style.display = 'none';
     document.getElementById('overviewTextarea').style.display = 'block';
@@ -1414,28 +1397,86 @@ function toggleEditOverview() {
 function cancelEditOverview() {
     document.getElementById('overviewDisplay').style.display = 'block';
     document.getElementById('overviewTextarea').style.display = 'none';
-    document.getElementById('editOverviewBtn').style.display = 'inline-block';
-    document.getElementById('saveOverviewBtn').style.display = 'none';
-    document.getElementById('cancelOverviewBtn').style.display = 'none';
     document.getElementById('overviewTextarea').value = originalOverview;
+
+    // If content exists show Edit, otherwise show just Save
+    if (originalOverview && originalOverview !== 'No overview has been added yet.') {
+        document.getElementById('editOverviewBtn').style.display = 'inline-block';
+        document.getElementById('saveOverviewBtn').style.display = 'none';
+    } else {
+        document.getElementById('editOverviewBtn').style.display = 'none';
+        document.getElementById('saveOverviewBtn').style.display = 'inline-block';
+    }
+    document.getElementById('cancelOverviewBtn').style.display = 'none';
+}
+
+async function loadOverview() {
+    try {
+        const response = await fetch(`/api/cases/${caseID}/overview`);
+        const data = await response.json();
+
+        if (data.success) {
+            const overview = data.overview.overview || '';
+            const hasContent = overview && overview.trim() !== '';
+
+            document.getElementById('overviewDisplay').innerHTML = hasContent
+                ? `<p>${overview.replace(/\n/g, '<br>')}</p>`
+                : '<p class="text-muted">No overview has been added yet.</p>';
+
+            document.getElementById('overviewTextarea').value = overview;
+            originalOverview = overview;
+
+            // If no content: show Save only
+            // If content exists: show Edit only
+            if (hasContent) {
+                document.getElementById('editOverviewBtn').style.display = 'inline-block';
+                document.getElementById('saveOverviewBtn').style.display = 'none';
+            } else {
+                document.getElementById('editOverviewBtn').style.display = 'none';
+                document.getElementById('saveOverviewBtn').style.display = 'inline-block';
+            }
+            document.getElementById('cancelOverviewBtn').style.display = 'none';
+            document.getElementById('overviewTextarea').style.display = 'none';
+            document.getElementById('overviewDisplay').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error loading overview:', error);
+        document.getElementById('overviewDisplay').innerHTML = '<p class="text-danger">Error loading overview</p>';
+    }
 }
 
 async function saveOverview() {
     const overview = document.getElementById('overviewTextarea').value;
-    
+
     try {
         const response = await fetch(`/api/cases/${caseID}/overview`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ overview })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             originalOverview = overview;
-            document.getElementById('overviewDisplay').innerHTML = `<p>${overview.replace(/\n/g, '<br>')}</p>`;
-            cancelEditOverview();
+            const hasContent = overview && overview.trim() !== '';
+
+            document.getElementById('overviewDisplay').innerHTML = hasContent
+                ? `<p>${overview.replace(/\n/g, '<br>')}</p>`
+                : '<p class="text-muted">No overview has been added yet.</p>';
+
+            document.getElementById('overviewTextarea').style.display = 'none';
+            document.getElementById('overviewDisplay').style.display = 'block';
+            document.getElementById('cancelOverviewBtn').style.display = 'none';
+
+            if (hasContent) {
+                document.getElementById('editOverviewBtn').style.display = 'inline-block';
+                document.getElementById('saveOverviewBtn').style.display = 'none';
+            } else {
+                document.getElementById('editOverviewBtn').style.display = 'none';
+                document.getElementById('saveOverviewBtn').style.display = 'inline-block';
+            }
+
             alert('Overview saved successfully!');
         } else {
             alert('Error saving overview: ' + data.msg);
@@ -1456,18 +1497,36 @@ async function loadFindings() {
     try {
         const response = await fetch(`/api/cases/${caseID}/findings`);
         const data = await response.json();
-        
+
         if (data.success) {
-            const findings = data.findings.findings || 'No findings have been documented yet.';
-            const recommendations = data.findings.recommendations || 'No recommendations have been provided yet.';
-            
-            document.getElementById('findingsText').innerHTML = `<p>${findings.replace(/\n/g, '<br>')}</p>`;
-            document.getElementById('recommendationsText').innerHTML = `<p>${recommendations.replace(/\n/g, '<br>')}</p>`;
+            const findings = data.findings.findings || '';
+            const recommendations = data.findings.recommendations || '';
+            const hasContent = (findings && findings.trim() !== '') || 
+                               (recommendations && recommendations.trim() !== '');
+
+            document.getElementById('findingsText').innerHTML = findings
+                ? `<p>${findings.replace(/\n/g, '<br>')}</p>`
+                : '<p class="text-muted">No findings have been documented yet.</p>';
+
+            document.getElementById('recommendationsText').innerHTML = recommendations
+                ? `<p>${recommendations.replace(/\n/g, '<br>')}</p>`
+                : '<p class="text-muted">No recommendations have been provided yet.</p>';
+
             document.getElementById('findingsTextarea').value = findings;
             document.getElementById('recommendationsTextarea').value = recommendations;
-            
             originalFindings = findings;
             originalRecommendations = recommendations;
+
+            if (hasContent) {
+                document.getElementById('editFindingsBtn').style.display = 'inline-block';
+                document.getElementById('saveFindingsBtn').style.display = 'none';
+            } else {
+                document.getElementById('editFindingsBtn').style.display = 'none';
+                document.getElementById('saveFindingsBtn').style.display = 'inline-block';
+            }
+            document.getElementById('cancelFindingsBtn').style.display = 'none';
+            document.getElementById('findingsEdit').style.display = 'none';
+            document.getElementById('findingsDisplay').style.display = 'block';
         }
     } catch (error) {
         console.error('Error loading findings:', error);
@@ -1485,32 +1544,62 @@ function toggleEditFindings() {
 function cancelEditFindings() {
     document.getElementById('findingsDisplay').style.display = 'block';
     document.getElementById('findingsEdit').style.display = 'none';
-    document.getElementById('editFindingsBtn').style.display = 'inline-block';
-    document.getElementById('saveFindingsBtn').style.display = 'none';
-    document.getElementById('cancelFindingsBtn').style.display = 'none';
     document.getElementById('findingsTextarea').value = originalFindings;
     document.getElementById('recommendationsTextarea').value = originalRecommendations;
+    document.getElementById('cancelFindingsBtn').style.display = 'inline-block';
+
+    const hasContent = (originalFindings && originalFindings.trim() !== '') ||
+                       (originalRecommendations && originalRecommendations.trim() !== '');
+
+    if (hasContent) {
+        document.getElementById('editFindingsBtn').style.display = 'inline-block';
+        document.getElementById('saveFindingsBtn').style.display = 'none';
+    } else {
+        document.getElementById('editFindingsBtn').style.display = 'none';
+        document.getElementById('saveFindingsBtn').style.display = 'inline-block';
+    }
+    document.getElementById('cancelFindingsBtn').style.display = 'none';
 }
 
 async function saveFindings() {
     const findings = document.getElementById('findingsTextarea').value;
     const recommendations = document.getElementById('recommendationsTextarea').value;
-    
+
     try {
         const response = await fetch(`/api/cases/${caseID}/findings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ findings, recommendations })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             originalFindings = findings;
             originalRecommendations = recommendations;
-            document.getElementById('findingsText').innerHTML = `<p>${findings.replace(/\n/g, '<br>')}</p>`;
-            document.getElementById('recommendationsText').innerHTML = `<p>${recommendations.replace(/\n/g, '<br>')}</p>`;
-            cancelEditFindings();
+            const hasContent = (findings && findings.trim() !== '') ||
+                               (recommendations && recommendations.trim() !== '');
+
+            document.getElementById('findingsText').innerHTML = findings
+                ? `<p>${findings.replace(/\n/g, '<br>')}</p>`
+                : '<p class="text-muted">No findings have been documented yet.</p>';
+
+            document.getElementById('recommendationsText').innerHTML = recommendations
+                ? `<p>${recommendations.replace(/\n/g, '<br>')}</p>`
+                : '<p class="text-muted">No recommendations have been provided yet.</p>';
+
+            document.getElementById('findingsEdit').style.display = 'none';
+            document.getElementById('findingsDisplay').style.display = 'block';
+            document.getElementById('cancelFindingsBtn').style.display = 'none';
+
+            if (hasContent) {
+                document.getElementById('editFindingsBtn').style.display = 'inline-block';
+                document.getElementById('saveFindingsBtn').style.display = 'none';
+            } else {
+                document.getElementById('editFindingsBtn').style.display = 'none';
+                document.getElementById('saveFindingsBtn').style.display = 'inline-block';
+            }
+
             alert('Findings saved successfully!');
         } else {
             alert('Error saving findings: ' + data.msg);
