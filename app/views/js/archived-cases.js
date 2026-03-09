@@ -39,6 +39,7 @@ function displayArchivedCases(cases) {
                             <th>Case Name</th>
                             <th>Client</th>
                             <th>Priority</th>
+                            <th>Status</th>
                             <th>Archived On</th>
                             <th>Days Archived</th>
                             <th>Actions</th>
@@ -126,6 +127,44 @@ function showEmptyState() {
                 </a>
             </div>
         </div>
+    `;
+}
+
+function createArchivedCaseRow(caseData) {
+    const priorityClass = {
+        'low': 'badge bg-secondary',
+        'medium': 'badge bg-warning',
+        'high': 'badge bg-danger',
+        'critical': 'badge bg-dark'
+    };
+
+    const statusClass = {
+        'active': 'badge bg-success',
+        'pending': 'badge bg-warning',
+        'closed': 'badge bg-secondary',
+        'archived': 'badge bg-info'
+    };
+
+    const archivedDate = new Date(caseData.archived_at).toLocaleDateString();
+    const daysArchived = calculateDaysArchived(caseData.archived_at);
+
+    return `
+        <tr>
+            <td><strong>${caseData.case_number}</strong></td>
+            <td>${caseData.case_name}</td>
+            <td>${caseData.client_name || 'N/A'}</td>
+            <td><span class="${priorityClass[caseData.priority]}">${caseData.priority}</span></td>
+            <td><span class="${statusClass[caseData.status] || 'badge bg-secondary'}">${caseData.status}</span></td>
+            <td>${archivedDate}</td>
+            <td><strong>${daysArchived} days</strong></td>
+            <td>
+                <button class="btn btn-sm btn-success" 
+                    onclick="confirmRestoreCase(${caseData.case_id}, '${caseData.case_name}')" 
+                    title="Restore Case">
+                    <i class="bi bi-arrow-counterclockwise"></i> Restore
+                </button>
+            </td>
+        </tr>
     `;
 }
 

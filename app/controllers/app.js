@@ -173,6 +173,12 @@ app.get('/archive-cases.html', requireInvestigator, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/archive-cases.html'));
 });
 
+app.get('/reports', requireInvestigator, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/reports.html'));
+});
+app.get('/reports.html', requireInvestigator, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/reports.html'));
+});
 //================ CLIENT-ONLY ROUTES ====================
 
 app.get('/client-dashboard', requireClient, (req, res) => {
@@ -1042,7 +1048,7 @@ app.post('/api/cases/:id/archive', requireInvestigator, async (req, res) => {
         const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
         const userId = user[0].user_id;
 
-        const caseData = await sql`SELECT investigator_id FROM cases WHERE case_id = ${caseId}`;
+        const caseData = await sql`SELECT investigator_id, status FROM cases WHERE case_id = ${caseId}`;
 
         if (caseData.length === 0) return res.status(404).json({ success: false, msg: "Case not found" });
 
@@ -1050,10 +1056,15 @@ app.post('/api/cases/:id/archive', requireInvestigator, async (req, res) => {
             return res.status(403).json({ success: false, msg: "Access denied: Only the lead investigator can archive this case" });
         }
 
+        // Only change status to 'archived' if it was active, otherwise keep existing status
+        const currentStatus = caseData[0].status;
+        const newStatus = currentStatus === 'active' ? 'archived' : currentStatus;
+
         await sql`
             UPDATE cases
             SET is_archived = ${is_archived},
-                archived_at = ${archived_at}
+                archived_at = ${archived_at},
+                status = ${newStatus}
             WHERE case_id = ${caseId}
         `;
 
@@ -1076,13 +1087,17 @@ app.get('/api/my-cases/archived', requireInvestigator, async (req, res) => {
         const investigatorID = investigator[0].user_id;
 
         const cases = await sql`
-            SELECT 
+            SELECT DISTINCT
                 c.case_id, c.case_number, c.case_name, c.description,
                 c.priority, c.status, c.created_at, c.archived_at,
                 cl.first_name || ' ' || cl.last_name AS client_name
             FROM cases c
             LEFT JOIN users cl ON c.client_id = cl.user_id
-            WHERE c.investigator_id = ${investigatorID}
+            LEFT JOIN case_team ct ON c.case_id = ct.case_id
+            WHERE (
+                c.investigator_id = ${investigatorID}
+                OR ct.investigator_id = ${investigatorID}
+            )
             AND c.is_archived = TRUE
             ORDER BY c.archived_at DESC
         `;
@@ -1102,35 +1117,28 @@ app.post('/api/cases/:id/restore', requireInvestigator, async (req, res) => {
     const userEmail = req.session.user;
 
     try {
-        // Get user ID
-        const user = await sql`
-            SELECT user_id FROM users WHERE email = ${userEmail}
-        `;
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
         const userId = user[0].user_id;
 
-        // Check if user is authorized to restore this case (must be lead investigator)
-        const caseData = await sql`
-            SELECT investigator_id FROM cases WHERE case_id = ${caseId}
-        `;
+        const caseData = await sql`SELECT investigator_id, status FROM cases WHERE case_id = ${caseId}`;
 
-        if (caseData.length === 0) {
-            return res.status(404).json({ success: false, msg: "Case not found" });
-        }
+        if (caseData.length === 0) return res.status(404).json({ success: false, msg: "Case not found" });
 
         if (caseData[0].investigator_id !== userId) {
-            return res.status(403).json({ 
-                success: false, 
-                msg: "Access denied: Only the lead investigator can restore this case" 
-            });
+            return res.status(403).json({ success: false, msg: "Access denied: Only the lead investigator can restore this case" });
         }
 
-        // Restore the case
+        // Only change status back to active if it was archived, leave closed cases as closed
+        const currentStatus = caseData[0].status;
+        const newStatus = currentStatus === 'archived' ? 'active' : currentStatus;
+
         await sql`
-        UPDATE cases
-        SET is_archived = FALSE,
-            archived_at = NULL
-        WHERE case_id = ${caseId}
-    `;
+            UPDATE cases
+            SET is_archived = FALSE,
+                archived_at = NULL,
+                status = ${newStatus}
+            WHERE case_id = ${caseId}
+        `;
 
         res.json({ success: true, msg: "Case restored successfully" });
 
@@ -1867,6 +1875,112 @@ app.post('/api/invitations/:id/respond', requireRole('investigator', 'client'), 
     }
 });
 
+// ==================REPORTS API ====================
+app.get('/api/reports/stats', requireInvestigator, async (req, res) => {
+    try {
+        const userEmail = req.session.user;
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        // Get all relevant case IDs first (avoids duplicate join issues)
+        const userCases = await sql`
+            SELECT DISTINCT c.case_id
+            FROM cases c
+            LEFT JOIN case_team ct ON c.case_id = ct.case_id
+            WHERE c.investigator_id = ${userId}
+            OR ct.investigator_id = ${userId}
+        `;
+        const caseIds = userCases.map(r => r.case_id);
+
+        if (caseIds.length === 0) {
+            return res.json({
+                success: true,
+                stats: {
+                    total: 0,
+                    byStatus: {},
+                    byPriority: {},
+                    totalEvidence: 0,
+                    avgCloseTimeDays: null,
+                    mostActiveCases: []
+                }
+            });
+        }
+
+        const statusCounts = await sql`
+            SELECT status, COUNT(*) as count
+            FROM cases
+            WHERE case_id = ANY(${caseIds})
+            GROUP BY status
+        `;
+
+        const priorityCounts = await sql`
+            SELECT priority, COUNT(*) as count
+            FROM cases
+            WHERE case_id = ANY(${caseIds})
+            GROUP BY priority
+        `;
+
+        const evidenceCount = await sql`
+            SELECT COUNT(*) as count
+            FROM evidence
+            WHERE case_id = ANY(${caseIds})
+        `;
+
+        const avgClose = await sql`
+            SELECT ROUND(AVG(EXTRACT(EPOCH FROM (closed_at - created_at)) / 86400)) as avg_days
+            FROM cases
+            WHERE case_id = ANY(${caseIds})
+            AND status = 'closed'
+            AND closed_at IS NOT NULL
+        `;
+
+        const mostActiveCases = await sql`
+            SELECT c.case_id, c.case_name, c.case_number, c.status, c.priority,
+                COUNT(a.audit_id) as event_count
+            FROM cases c
+            LEFT JOIN audit_log a ON c.case_id = a.case_id
+            WHERE c.case_id = ANY(${caseIds})
+            GROUP BY c.case_id, c.case_name, c.case_number, c.status, c.priority
+            ORDER BY event_count DESC
+            LIMIT 5
+        `;
+
+        const byStatus = {};
+        statusCounts.forEach(row => {
+            byStatus[row.status] = parseInt(row.count);
+        });
+
+        const byPriority = {};
+        priorityCounts.forEach(row => {
+            byPriority[row.priority] = parseInt(row.count);
+        });
+
+        const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
+
+        res.json({
+            success: true,
+            stats: {
+                total,
+                byStatus,
+                byPriority,
+                totalEvidence: parseInt(evidenceCount[0].count),
+                avgCloseTimeDays: avgClose[0].avg_days ? parseInt(avgClose[0].avg_days) : null,
+                mostActiveCases: mostActiveCases.map(c => ({
+                    case_id: c.case_id,
+                    case_name: c.case_name,
+                    case_number: c.case_number,
+                    status: c.status,
+                    priority: c.priority,
+                    event_count: parseInt(c.event_count)
+                }))
+            }
+        });
+
+    } catch (err) {
+        console.error('Error generating report stats:', err);
+        res.status(500).json({ success: false, msg: 'Error generating stats' });
+    }
+});
 // ================ ERROR HANDLING ====================
 
 // Catch-all middleware for any undefined routes

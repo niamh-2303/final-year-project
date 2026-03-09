@@ -951,29 +951,35 @@ function filterAuditEvents(filterType) {
         activeCard.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
     }
 
-    // Filter data
+    // Filter data based on type
     if (filterType === 'all') {
         filteredAuditData = [...auditLogData];
-        // "All" just updates the main timeline, no popup
-        renderEnhancedTimeline(filteredAuditData);
-        return;
-    }
-
-    if (filterType === 'evidence') {
+    } else if (filterType === 'evidence') {
         filteredAuditData = auditLogData.filter(e =>
             e.action.includes('EVIDENCE') || e.action.includes('UPLOADED')
         );
-        openAuditModal('Evidence Events', 'bi-file-earmark-lock', filteredAuditData);
     } else if (filterType === 'coc') {
         filteredAuditData = auditLogData.filter(e =>
             e.action.includes('COC_') || e.action.includes('CHAIN')
         );
-        openAuditModal('Chain of Custody Events', 'bi-link-45deg', filteredAuditData);
     } else if (filterType === 'verified') {
         filteredAuditData = auditLogData.filter(e =>
             e.action.includes('VERIFIED') || e.action.includes('HASH')
         );
-        openAuditModal('Verified Events', 'bi-shield-check', filteredAuditData);
+    }
+
+    // ALWAYS update the background timeline
+    renderEnhancedTimeline(filteredAuditData);
+
+    // ALSO open popup for specific filters (not for 'all')
+    if (filterType !== 'all') {
+        const modalTitles = {
+            evidence: { title: 'Evidence Events', icon: 'bi-file-earmark-lock' },
+            verified: { title: 'Verified Events', icon: 'bi-shield-check' },
+            coc: { title: 'Chain of Custody Events', icon: 'bi-link-45deg' }
+        };
+        const { title, icon } = modalTitles[filterType];
+        openAuditModal(title, icon, filteredAuditData);
     }
 }
 
