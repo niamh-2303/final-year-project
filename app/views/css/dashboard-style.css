@@ -2113,3 +2113,60 @@ textarea.form-control {
         page-break-inside: avoid;
     }
 }
+
+/* ===========Status Control Strip==========*/
+.status-control-strip {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+}
+
+.status-control-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 10px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+
+.status-control-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+.status-control-select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 5px 32px 5px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    min-width: 110px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%236c757d' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-color: white;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.status-control-select:hover {
+    border-color: #667eea;
+}
+
+.status-control-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+/* Colour the select text based on value */
+.status-control-select.status-active   { color: #198754; background-color: #f0faf4; border-color: #a3cfbb; }
+.status-control-select.status-pending  { color: #856404; background-color: #fffbf0; border-color: #ffe69c; }
+.status-control-select.status-closed   { color: #495057; background-color: #f8f9fa; border-color: #ced4da; }

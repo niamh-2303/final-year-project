@@ -685,7 +685,14 @@ function displayCaseData() {
     if (caseData.priority === "high") priority.classList.add("bg-danger");
     if (caseData.priority === "critical") priority.classList.add("bg-dark");
 
+    const statusSelect = document.getElementById('statusSelect');
+    if (statusSelect) {
+        statusSelect.value = caseData.status;
+        statusSelect.className = `status-control-select status-${caseData.status}`;
+    }
+
     console.log("Case Loaded:", caseData);
+
 }
 
 /* ======================================================
@@ -1779,6 +1786,44 @@ function displayEvidenceTimeline(timeline) {
         container.appendChild(timelineItem);
     });
 }
+
+/* ======================================================
+   UPDATE OPTION FOR CASE STATUS    
+====================================================== */
+async function changeCaseStatus(newStatus) {
+    const statusSelect = document.getElementById('statusSelect');
+    
+    if (!confirm(`Change case status to "${newStatus}"?`)) {
+        statusSelect.value = caseData.status;
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/cases/${caseID}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            caseData.status = newStatus;
+            statusSelect.className = `status-control-select status-${newStatus}`;
+            displayCaseData();
+            alert('Status updated successfully!');
+        } else {
+            alert('Error: ' + result.msg);
+            statusSelect.value = caseData.status;
+        }
+    } catch (err) {
+        console.error('Error changing status:', err);
+        alert('Failed to update status.');
+        statusSelect.value = caseData.status;
+    }
+}
+
+window.changeCaseStatus = changeCaseStatus;
 
 /* ======================================================
    UPDATE PAGE LOAD TO INCLUDE NEW FUNCTIONS

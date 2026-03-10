@@ -1981,6 +1981,55 @@ app.get('/api/reports/stats', requireInvestigator, async (req, res) => {
         res.status(500).json({ success: false, msg: 'Error generating stats' });
     }
 });
+
+//===========Updating case status ==================
+app.post('/api/cases/:id/status', requireInvestigator, async (req, res) => {
+    const caseId = req.params.id;
+    const { status } = req.body;
+    const userEmail = req.session.user;
+
+    const validStatuses = ['active', 'pending', 'closed'];
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json({ success: false, msg: 'Invalid status' });
+    }
+
+    try {
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        const caseData = await sql`SELECT investigator_id FROM cases WHERE case_id = ${caseId}`;
+        if (caseData.length === 0) return res.status(404).json({ success: false, msg: 'Case not found' });
+
+        // Only lead investigator can change status
+        if (caseData[0].investigator_id !== userId) {
+            return res.status(403).json({ success: false, msg: 'Only the lead investigator can change case status' });
+        }
+
+        const closedAt = status === 'closed' ? new Date().toISOString() : null;
+
+        await sql`
+            UPDATE cases 
+            SET status = ${status}, 
+                closed_at = ${closedAt}
+            WHERE case_id = ${caseId}
+        `;
+
+        await createAuditLog(
+            parseInt(caseId),
+            userId,
+            'STATUS_CHANGED',
+            `Case status changed to: ${status}`
+        );
+
+        res.json({ success: true, msg: 'Status updated successfully' });
+
+    } catch (err) {
+        console.error('Error updating status:', err);
+        res.status(500).json({ success: false, msg: 'Error updating status' });
+    }
+});
+
+
 // ================ ERROR HANDLING ====================
 
 // Catch-all middleware for any undefined routes
