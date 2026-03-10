@@ -1404,7 +1404,7 @@ function cancelEditOverview() {
         document.getElementById('editOverviewBtn').style.display = 'inline-block';
         document.getElementById('saveOverviewBtn').style.display = 'none';
     } else {
-        document.getElementById('editOverviewBtn').style.display = 'none';
+        document.getElementById('editOverviewBtn').style.display = 'inline-block';
         document.getElementById('saveOverviewBtn').style.display = 'inline-block';
     }
     document.getElementById('cancelOverviewBtn').style.display = 'none';
@@ -1425,14 +1425,12 @@ async function loadOverview() {
 
             document.getElementById('overviewTextarea').value = overview;
             originalOverview = overview;
-
-            // If no content: show Save only
-            // If content exists: show Edit only
+        
             if (hasContent) {
                 document.getElementById('editOverviewBtn').style.display = 'inline-block';
                 document.getElementById('saveOverviewBtn').style.display = 'none';
             } else {
-                document.getElementById('editOverviewBtn').style.display = 'none';
+                document.getElementById('editOverviewBtn').style.display = 'inline-block';
                 document.getElementById('saveOverviewBtn').style.display = 'inline-block';
             }
             document.getElementById('cancelOverviewBtn').style.display = 'none';
@@ -1473,7 +1471,7 @@ async function saveOverview() {
                 document.getElementById('editOverviewBtn').style.display = 'inline-block';
                 document.getElementById('saveOverviewBtn').style.display = 'none';
             } else {
-                document.getElementById('editOverviewBtn').style.display = 'none';
+                document.getElementById('editOverviewBtn').style.display = 'inline-block';
                 document.getElementById('saveOverviewBtn').style.display = 'inline-block';
             }
 
@@ -1521,7 +1519,7 @@ async function loadFindings() {
                 document.getElementById('editFindingsBtn').style.display = 'inline-block';
                 document.getElementById('saveFindingsBtn').style.display = 'none';
             } else {
-                document.getElementById('editFindingsBtn').style.display = 'none';
+                document.getElementById('editFindingsBtn').style.display = 'inline-block';
                 document.getElementById('saveFindingsBtn').style.display = 'inline-block';
             }
             document.getElementById('cancelFindingsBtn').style.display = 'none';
@@ -1555,7 +1553,7 @@ function cancelEditFindings() {
         document.getElementById('editFindingsBtn').style.display = 'inline-block';
         document.getElementById('saveFindingsBtn').style.display = 'none';
     } else {
-        document.getElementById('editFindingsBtn').style.display = 'none';
+        document.getElementById('editFindingsBtn').style.display = 'inline-block';
         document.getElementById('saveFindingsBtn').style.display = 'inline-block';
     }
     document.getElementById('cancelFindingsBtn').style.display = 'none';
@@ -1596,7 +1594,7 @@ async function saveFindings() {
                 document.getElementById('editFindingsBtn').style.display = 'inline-block';
                 document.getElementById('saveFindingsBtn').style.display = 'none';
             } else {
-                document.getElementById('editFindingsBtn').style.display = 'none';
+                document.getElementById('editFindingsBtn').style.display = 'inline-block';
                 document.getElementById('saveFindingsBtn').style.display = 'inline-block';
             }
 
