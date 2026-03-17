@@ -1,0 +1,341 @@
+/* ============================================================
+   signoff.css  –  Report / Sign-Off tab styles
+   ============================================================ */
+
+/* ── Container ─────────────────────────────────────────────── */
+.signoff-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-bottom: 40px;
+}
+
+/* ── Page header ─────────────────────────────────────────────*/
+.signoff-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 28px 32px;
+    background: linear-gradient(135deg, #1a2332 0%, #2d3f55 100%);
+    border-radius: 12px;
+    margin-bottom: 28px;
+    color: white;
+}
+.signoff-header-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: rgba(59,130,246,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #93c5fd;
+    flex-shrink: 0;
+}
+
+/* ── Step indicator ──────────────────────────────────────────*/
+.signoff-steps {
+    display: flex;
+    align-items: center;
+    margin-bottom: 28px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px 28px;
+}
+.signoff-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+.signoff-step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    color: #94a3b8;
+    background: white;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+.signoff-step-label {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+.signoff-step.active .signoff-step-num {
+    border-color: #3b82f6;
+    background: #3b82f6;
+    color: white;
+}
+.signoff-step.active .signoff-step-label { color: #1e40af; font-weight: 600; }
+.signoff-step.done .signoff-step-num {
+    border-color: #16a34a;
+    background: #16a34a;
+    color: white;
+}
+.signoff-step.done .signoff-step-num::before { content: '✓'; }
+.signoff-step.done .signoff-step-label { color: #166534; font-weight: 600; }
+.signoff-step-connector {
+    flex: 0 0 40px;
+    height: 2px;
+    background: #e2e8f0;
+    margin: 0 8px;
+}
+
+/* ── Card ────────────────────────────────────────────────────*/
+.signoff-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+.signoff-card-header {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 16px 24px;
+    font-weight: 600;
+    font-size: 15px;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.signoff-card-header i { color: #3b82f6; font-size: 18px; }
+.signoff-card-body { padding: 24px; }
+
+/* ── Integrity status boxes ──────────────────────────────────*/
+.integrity-idle-box,
+.integrity-running-box,
+.integrity-pass-box,
+.integrity-fail-box {
+    padding: 24px;
+    border-radius: 10px;
+    text-align: center;
+    border: 2px dashed #e2e8f0;
+}
+.integrity-running-box {
+    border-style: solid;
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+.integrity-pass-box {
+    border-style: solid;
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+.integrity-fail-box {
+    border-style: solid;
+    border-color: #fca5a5;
+    background: #fef2f2;
+}
+
+/* ── Integrity table ─────────────────────────────────────────*/
+.integrity-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.integrity-table th {
+    background: #1a2332;
+    color: white;
+    padding: 9px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+}
+.integrity-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: top;
+}
+.integrity-table tr:nth-child(even) td { background: #f8fafc; }
+.integrity-table tr:hover td { background: #eff6ff; }
+.integrity-row-fail td { background: #fff5f5 !important; }
+
+/* ── Review grid ─────────────────────────────────────────────*/
+.signoff-review-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.review-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    border-right: 1px solid #e2e8f0;
+}
+.review-item:nth-child(even) { border-right: none; }
+.review-item:nth-last-child(-n+2) { border-bottom: none; }
+.review-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+}
+.review-value { font-size: 14px; color: #1e293b; font-weight: 500; }
+
+/* ── Badges ──────────────────────────────────────────────────*/
+.signoff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.signoff-badge.pass    { background: #dcfce7; color: #166534; }
+.signoff-badge.fail    { background: #fee2e2; color: #991b1b; }
+.signoff-badge.warning { background: #fef9c3; color: #854d0e; }
+
+/* ── Buttons ─────────────────────────────────────────────────*/
+.btn-signoff-primary,
+.btn-signoff-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+.btn-signoff-primary {
+    background: #3b82f6;
+    color: white;
+}
+.btn-signoff-primary:hover { background: #2563eb; transform: translateY(-1px); }
+.btn-signoff-primary:disabled { background: #93c5fd; cursor: not-allowed; transform: none; }
+.btn-signoff-secondary {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+.btn-signoff-secondary:hover { background: #e2e8f0; }
+.btn-danger-confirm { background: #dc2626 !important; }
+.btn-danger-confirm:hover { background: #b91c1c !important; }
+
+.signoff-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ── Loading / generating ────────────────────────────────────*/
+.signoff-loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+}
+.signoff-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+}
+.signoff-spinner-sm {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.signoff-generating {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+.signoff-gen-anim {
+    font-size: 64px;
+    color: #3b82f6;
+    animation: pulse-pdf 1.2s ease-in-out infinite;
+}
+@keyframes pulse-pdf {
+    0%, 100% { transform: scale(1);   opacity: 1; }
+    50%       { transform: scale(1.1); opacity: 0.7; }
+}
+.signoff-progress {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    margin: 20px auto 0;
+    max-width: 300px;
+    overflow: hidden;
+}
+.signoff-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 3px;
+    animation: progress-slide 1.5s ease-in-out infinite;
+}
+@keyframes progress-slide {
+    0%   { width: 0%;   margin-left: 0; }
+    50%  { width: 60%;  margin-left: 20%; }
+    100% { width: 0%;   margin-left: 100%; }
+}
+
+/* ── Done / success / fail card ─────────────────────────────*/
+.signoff-done-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 40px 32px;
+    text-align: center;
+}
+.signoff-done-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    margin: 0 auto 20px;
+}
+.signoff-done-icon.success { background: #dcfce7; color: #16a34a; }
+.signoff-done-icon.fail    { background: #fee2e2; color: #dc2626; }
+.signoff-done-icon.warning { background: #fef9c3; color: #d97706; }
+
+/* ── Download box ────────────────────────────────────────────*/
+.signoff-download-box {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px 24px;
+    text-align: left;
+    max-width: 580px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+}
+.signoff-download-box > div { flex: 1; }

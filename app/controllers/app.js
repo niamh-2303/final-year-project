@@ -8,6 +8,9 @@ const validator = require('validator');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const fs = require('fs');
+const crypto = require('crypto');
+const { execFile } = require('child_process');
+const os = require('os');
 
 
 const app = express();
@@ -2026,6 +2029,402 @@ app.post('/api/cases/:id/status', requireInvestigator, async (req, res) => {
     } catch (err) {
         console.error('Error updating status:', err);
         res.status(500).json({ success: false, msg: 'Error updating status' });
+    }
+});
+
+//=======Generate Report Sections==============
+// ── Helper: compute SHA-256 of a file on disk ────────────────
+function computeFileHash(filePath) {
+    return new Promise((resolve, reject) => {
+        const crypto = require('crypto');
+        const fs = require('fs');
+        const hash = crypto.createHash('sha256');
+        const stream = fs.createReadStream(filePath);
+        stream.on('data', chunk => hash.update(chunk));
+        stream.on('end', () => resolve(hash.digest('hex')));
+        stream.on('error', reject);
+    });
+}
+
+// Re-hashes every evidence file for this case and compares
+// against the stored SHA-256 values.  Returns per-item results.
+app.get('/api/cases/:id/integrity-check', requireInvestigator, async (req, res) => {
+    const caseId = req.params.id;
+    const userEmail = req.session.user;
+
+    try {
+        // Auth check – lead investigator or team member only
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        const caseData = await sql`
+            SELECT investigator_id FROM cases WHERE case_id = ${caseId}
+        `;
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: 'Case not found' });
+        }
+
+        let isAuthorized = caseData[0].investigator_id === userId;
+        if (!isAuthorized) {
+            const tm = await sql`
+                SELECT * FROM case_team
+                WHERE case_id = ${caseId} AND investigator_id = ${userId}
+            `;
+            isAuthorized = tm.length > 0;
+        }
+        if (!isAuthorized) {
+            return res.status(403).json({ success: false, msg: 'Access denied' });
+        }
+
+        // Fetch all evidence for this case
+        const evidenceList = await sql`
+            SELECT evidence_id, evidence_name, file_path, file_hash
+            FROM evidence
+            WHERE case_id = ${caseId}
+        `;
+
+        const results = [];
+        const uploadsDir = path.join(__dirname, 'uploads');
+
+        for (const ev of evidenceList) {
+            const filePath = path.join(uploadsDir, ev.file_path);
+            let computedHash = null;
+            let fileExists  = false;
+            let error       = null;
+
+            try {
+                if (fs.existsSync(filePath)) {
+                    fileExists  = true;
+                    computedHash = await computeFileHash(filePath);
+                } else {
+                    error = 'File not found on disk';
+                }
+            } catch (e) {
+                error = e.message;
+            }
+
+            const match = fileExists && computedHash === ev.file_hash;
+
+            results.push({
+                evidence_id:   ev.evidence_id,
+                evidence_name: ev.evidence_name,
+                stored_hash:   ev.file_hash,
+                computed_hash: computedHash,
+                file_exists:   fileExists,
+                match,
+                error,
+            });
+        }
+
+        const allMatch = results.length > 0 && results.every(r => r.match);
+
+        res.json({ success: true, results, allMatch });
+
+    } catch (err) {
+        console.error('Error running integrity check:', err);
+        res.status(500).json({ success: false, msg: 'Error running integrity check' });
+    }
+});
+
+
+// Collects all case data, runs integrity check, generates PDF,
+// logs to audit, stores PDF path, and closes the case.
+app.post('/api/cases/:id/generate-report', requireInvestigator, async (req, res) => {
+    const caseId    = req.params.id;
+    const userEmail = req.session.user;
+    const crypto    = require('crypto');
+    const os        = require('os');
+    const { execFile } = require('child_process');
+
+    try {
+        // ── Auth ───────────────────────────────────────────────
+        const user = await sql`SELECT user_id, first_name, last_name FROM users WHERE email = ${userEmail}`;
+        if (user.length === 0) return res.status(401).json({ success: false, msg: 'User not found' });
+        const userId      = user[0].user_id;
+        const userName    = `${user[0].first_name} ${user[0].last_name}`;
+
+        const caseData = await sql`
+            SELECT * FROM cases WHERE case_id = ${caseId}
+        `;
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: 'Case not found' });
+        }
+
+        // Only lead investigator can generate the final report
+        if (caseData[0].investigator_id !== userId) {
+            return res.status(403).json({
+                success: false,
+                msg: 'Only the lead investigator can generate the final report'
+            });
+        }
+
+        const theCase = caseData[0];
+
+        // ── Gather all data ─────────────────────────────────────
+
+        // Lead investigator
+        const leadInv = await sql`
+            SELECT user_id, first_name || ' ' || last_name AS name
+            FROM users WHERE user_id = ${theCase.investigator_id}
+        `;
+
+        // Client
+        const client = await sql`
+            SELECT user_id, first_name || ' ' || last_name AS name
+            FROM users WHERE user_id = ${theCase.client_id}
+        `;
+
+        // Other investigators
+        const investigators = await sql`
+            SELECT u.user_id, u.first_name || ' ' || u.last_name AS name
+            FROM case_team ct
+            JOIN users u ON u.user_id = ct.investigator_id
+            WHERE ct.case_id = ${caseId}
+            AND ct.investigator_id != ${theCase.investigator_id}
+        `;
+
+        // Overview
+        const overview = await sql`SELECT overview FROM case_details WHERE case_id = ${caseId}`;
+
+        // Findings
+        const findings = await sql`SELECT findings, recommendations FROM case_findings WHERE case_id = ${caseId}`;
+
+        // Tools
+        const tools = await sql`SELECT * FROM case_tools WHERE case_id = ${caseId} ORDER BY created_at ASC`;
+
+        // Evidence
+        const evidence = await sql`SELECT * FROM evidence WHERE case_id = ${caseId} ORDER BY collected_at ASC`;
+
+        // CoC records
+        const cocRecords = await sql`
+            SELECT coc.*, e.evidence_name, u.first_name || ' ' || u.last_name AS created_by_name
+            FROM chain_of_custody coc
+            LEFT JOIN evidence e ON coc.evidence_id = e.evidence_id
+            LEFT JOIN users u ON coc.created_by = u.user_id
+            WHERE coc.case_id = ${caseId}
+            ORDER BY coc.event_datetime ASC
+        `;
+
+        // Audit log
+        const auditLog = await sql`
+            SELECT al.*, u.first_name || ' ' || u.last_name AS user
+            FROM audit_log al
+            JOIN users u ON al.user_id = u.user_id
+            WHERE al.case_id = ${caseId}
+            ORDER BY al.timestamp ASC
+        `;
+
+        // ── Integrity check ─────────────────────────────────────
+        const uploadsDir = path.join(__dirname, 'uploads');
+        const integrityResults = [];
+
+        for (const ev of evidence) {
+            const filePath = path.join(uploadsDir, ev.file_path);
+            let computedHash = null;
+            let fileExists   = false;
+            let error        = null;
+
+            try {
+                if (fs.existsSync(filePath)) {
+                    fileExists   = true;
+                    computedHash = await computeFileHash(filePath);
+                } else {
+                    error = 'File not found on disk';
+                }
+            } catch (e) {
+                error = e.message;
+            }
+
+            const match = fileExists && computedHash === ev.file_hash;
+            integrityResults.push({
+                evidence_id:   ev.evidence_id,
+                evidence_name: ev.evidence_name,
+                stored_hash:   ev.file_hash,
+                computed_hash: computedHash,
+                file_exists:   fileExists,
+                match,
+                error,
+            });
+        }
+
+        const allMatch = integrityResults.length > 0
+            ? integrityResults.every(r => r.match)
+            : true;
+
+        const generatedAt = new Date().toUTCString()
+            .replace('GMT', 'UTC')
+            .replace(/:\d{2} UTC/, ' UTC');
+
+        // ── Build JSON payload for Python script ────────────────
+        const reportPayload = {
+            case: {
+                ...theCase,
+                lead_investigator: leadInv[0] || null,
+                client:            client[0]  || null,
+                investigators:     investigators,
+                client_name:       client[0]?.name || '—',
+            },
+            overview:           overview[0]?.overview || '',
+            findings:           findings[0] || { findings: '', recommendations: '' },
+            tools:              tools,
+            evidence:           evidence,
+            integrity_results:  integrityResults,
+            coc_records:        cocRecords,
+            audit_log:          auditLog,
+            report_meta: {
+                generated_by:     userName,
+                generated_at:     generatedAt,
+                case_number:      theCase.case_number,
+                evidence_count:   evidence.length,
+                all_hashes_match: allMatch,
+            },
+        };
+
+        // ── Write temp JSON and call Python ────────────────────
+        const tmpJson = path.join(os.tmpdir(), `dfir_case_${caseId}_${Date.now()}.json`);
+        const pdfDir  = path.join(__dirname, 'reports');
+        if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
+
+        const pdfFileName = `DFIR-Report-${theCase.case_number}-${Date.now()}.pdf`;
+        const pdfPath     = path.join(pdfDir, pdfFileName);
+
+        fs.writeFileSync(tmpJson, JSON.stringify(reportPayload));
+
+        // Resolve script path – assume generate_report.py lives in the same
+        // directory as server.js (i.e. src/)
+        const scriptPath = path.join(__dirname, 'generate_report.py');
+
+        await new Promise((resolve, reject) => {
+            execFile('python3', [scriptPath, '--input', tmpJson, '--output', pdfPath],
+                { timeout: 60000 },
+                (err, stdout, stderr) => {
+                    // Clean up temp file regardless
+                    try { fs.unlinkSync(tmpJson); } catch (_) {}
+                    if (err) return reject(new Error(stderr || err.message));
+                    resolve();
+                }
+            );
+        });
+
+        // ── Store report path + close case ──────────────────────
+        await sql`
+            UPDATE cases
+            SET status     = 'closed',
+                closed_at  = NOW(),
+                report_path = ${pdfFileName}
+            WHERE case_id = ${caseId}
+        `;
+
+        // ── Audit log entries ───────────────────────────────────
+        const integrityStatus = allMatch
+            ? `All ${integrityResults.length} evidence items passed SHA-256 integrity check`
+            : `WARNING: ${integrityResults.filter(r => !r.match).length} evidence item(s) failed integrity check`;
+
+        await createAuditLog(parseInt(caseId), userId, 'INTEGRITY_CHECK',
+            integrityStatus);
+
+        await createAuditLog(parseInt(caseId), userId, 'REPORT_GENERATED',
+            `Final report generated: ${pdfFileName}. Case closed.`);
+
+        // ── Respond ─────────────────────────────────────────────
+        res.json({
+            success:        true,
+            msg:            'Report generated and case closed successfully',
+            pdfFileName,
+            allMatch,
+            integrityResults,
+        });
+
+    } catch (err) {
+        console.error('Error generating report:', err);
+        res.status(500).json({ success: false, msg: 'Error generating report: ' + err.message });
+    }
+});
+
+
+// Streams the stored PDF report to the client.
+app.get('/api/cases/:id/download-report', requireRole('investigator', 'client'), async (req, res) => {
+    const caseId    = req.params.id;
+    const userEmail = req.session.user;
+    const userRole  = req.session.role;
+
+    try {
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+        const userId = user[0].user_id;
+
+        const caseData = await sql`
+            SELECT investigator_id, client_id, case_number, report_path
+            FROM cases WHERE case_id = ${caseId}
+        `;
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: 'Case not found' });
+        }
+
+        const theCase = caseData[0];
+
+        // Auth check
+        let isAuthorized = false;
+        if (userRole === 'investigator') {
+            isAuthorized = theCase.investigator_id === userId;
+            if (!isAuthorized) {
+                const tm = await sql`
+                    SELECT * FROM case_team WHERE case_id = ${caseId} AND investigator_id = ${userId}
+                `;
+                isAuthorized = tm.length > 0;
+            }
+        } else if (userRole === 'client') {
+            isAuthorized = theCase.client_id === userId;
+        }
+
+        if (!isAuthorized) {
+            return res.status(403).json({ success: false, msg: 'Access denied' });
+        }
+
+        if (!theCase.report_path) {
+            return res.status(404).json({ success: false, msg: 'No report has been generated for this case yet' });
+        }
+
+        const pdfPath = path.join(__dirname, 'reports', theCase.report_path);
+        if (!fs.existsSync(pdfPath)) {
+            return res.status(404).json({ success: false, msg: 'Report file not found on server' });
+        }
+
+        await createAuditLog(parseInt(caseId), userId, 'REPORT_DOWNLOADED',
+            `Report downloaded: ${theCase.report_path}`);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition',
+            `attachment; filename="DFIR-Report-${theCase.case_number}.pdf"`);
+        fs.createReadStream(pdfPath).pipe(res);
+
+    } catch (err) {
+        console.error('Error downloading report:', err);
+        res.status(500).json({ success: false, msg: 'Error downloading report' });
+    }
+});
+
+
+// Returns whether a report has already been generated.
+app.get('/api/cases/:id/report-status', requireRole('investigator', 'client'), async (req, res) => {
+    const caseId = req.params.id;
+    try {
+        const caseData = await sql`
+            SELECT status, report_path, closed_at FROM cases WHERE case_id = ${caseId}
+        `;
+        if (caseData.length === 0) {
+            return res.status(404).json({ success: false, msg: 'Case not found' });
+        }
+        const { status, report_path, closed_at } = caseData[0];
+        res.json({
+            success:      true,
+            hasReport:    !!report_path,
+            reportPath:   report_path || null,
+            caseStatus:   status,
+            closedAt:     closed_at,
+        });
+    } catch (err) {
+        console.error('Error fetching report status:', err);
+        res.status(500).json({ success: false, msg: 'Error fetching report status' });
     }
 });
 
