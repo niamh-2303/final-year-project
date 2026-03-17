@@ -783,16 +783,20 @@ function showAuditError() {
 // Update statistics
 function updateAuditStats(auditLog) {
     const totalEvents = auditLog.length;
-    const evidenceEvents = auditLog.filter(e => 
-        e.action.includes('EVIDENCE') || e.action.includes('UPLOADED')
+
+    const evidenceEvents = auditLog.filter(e =>
+        e.action === 'EVIDENCE_UPLOADED' ||
+        e.action === 'EVIDENCE_ACCESSED'
     ).length;
-    const verifiedEvents = auditLog.filter(e => 
-        e.action.includes('VERIFIED') || e.action.includes('HASH')
+
+    const verifiedEvents = auditLog.filter(e =>
+        e.action === 'COC_VERIFIED'
     ).length;
-    const cocEvents = auditLog.filter(e => 
-        e.action.includes('COC_') || e.action.includes('CHAIN')
+
+    const cocEvents = auditLog.filter(e =>
+        e.action.startsWith('COC_') && e.action !== 'COC_VERIFIED'
     ).length;
-    
+
     document.getElementById('totalEventsCount').textContent = totalEvents;
     document.getElementById('evidenceEventsCount').textContent = evidenceEvents;
     document.getElementById('verifiedEventsCount').textContent = verifiedEvents;
@@ -887,8 +891,14 @@ function createEventCard(event, index) {
             <div class="audit-event-badges">
                 <span class="audit-badge verified">
                     <i class="bi bi-check-circle"></i>
-                    Verified
+                    Chain Integrity
                 </span>
+                ${event.action === 'COC_VERIFIED' ? `
+                    <span class="audit-badge verified">
+                        <i class="bi bi-shield-check"></i>
+                        Hash Verified
+                    </span>
+                ` : ''}
                 ${isCoCEvent ? `
                     <span class="audit-badge chain-linked">
                         <i class="bi bi-link-45deg"></i>
@@ -963,15 +973,16 @@ function filterAuditEvents(filterType) {
         filteredAuditData = [...auditLogData];
     } else if (filterType === 'evidence') {
         filteredAuditData = auditLogData.filter(e =>
-            e.action.includes('EVIDENCE') || e.action.includes('UPLOADED')
+            e.action === 'EVIDENCE_UPLOADED' ||
+            e.action === 'EVIDENCE_ACCESSED'
         );
     } else if (filterType === 'coc') {
         filteredAuditData = auditLogData.filter(e =>
-            e.action.includes('COC_') || e.action.includes('CHAIN')
+            e.action.startsWith('COC_') && e.action !== 'COC_VERIFIED'
         );
     } else if (filterType === 'verified') {
         filteredAuditData = auditLogData.filter(e =>
-            e.action.includes('VERIFIED') || e.action.includes('HASH')
+            e.action === 'COC_VERIFIED'
         );
     }
 
@@ -1070,17 +1081,54 @@ function searchAuditEvents(searchTerm) {
 
 // Show CoC connection (navigate to Chain of Custody tab)
 function showCoCConnection(eventId) {
-    // Switch to Chain of Custody tab
+    const auditEvent = auditLogData.find(e => e.id == eventId);
+
+    // Close the audit filter modal if it's open
+    const auditModal = document.getElementById('auditFilterModal');
+    const openModal = bootstrap.Modal.getInstance(auditModal);
+    if (openModal) openModal.hide();
+
     const cocTab = document.getElementById('chain-of-custody-tab');
-    if (cocTab) {
-        cocTab.click();
-        
-        // Highlight related CoC event after a short delay
+    if (!cocTab) return;
+
+    cocTab.click();
+
+    setTimeout(() => {
+        const allCocCards = document.querySelectorAll('.coc-event-card');
+        if (allCocCards.length === 0) return;
+
+        let targetCard = null;
+
+        if (auditEvent) {
+            const auditTime = new Date(auditEvent.timestamp).getTime();
+            let closestDiff = Infinity;
+
+            allCocCards.forEach(card => {
+                const timeEl = card.querySelector('small.text-muted');
+                if (timeEl) {
+                    const cardTime = new Date(timeEl.textContent.replace(/[^\d\/\s:,APM]/gi, '').trim()).getTime();
+                    const diff = Math.abs(cardTime - auditTime);
+                    if (diff < closestDiff) {
+                        closestDiff = diff;
+                        targetCard = card;
+                    }
+                }
+            });
+        }
+
+        if (!targetCard) targetCard = allCocCards[0];
+
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targetCard.style.transition = 'box-shadow 0.3s ease, border 0.3s ease';
+        targetCard.style.border = '2px solid #667eea';
+        targetCard.style.boxShadow = '0 0 0 4px rgba(102, 126, 234, 0.2)';
+
         setTimeout(() => {
-            // You can implement highlighting logic here
-            console.log('Showing CoC connection for event:', eventId);
-        }, 300);
-    }
+            targetCard.style.border = '';
+            targetCard.style.boxShadow = '';
+        }, 3000);
+
+    }, 400);
 }
 
 // Export audit log
@@ -1165,6 +1213,7 @@ function displayChainOfCustody(records) {
     records.forEach(record => {
         const eventCard = document.createElement('div');
         eventCard.className = 'coc-event-card mb-3';
+        eventCard.setAttribute('data-coc-record-id', record.coc_id);
         
         const iconClass = getCoCIconClass(record.event_type);
         const timeFormatted = new Date(record.event_datetime).toLocaleString();

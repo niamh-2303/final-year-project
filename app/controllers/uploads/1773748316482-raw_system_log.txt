@@ -1,0 +1,19 @@
+Mar 17 02:10:11 auth-server sshd[1024]: Failed password for invalid user
+admin from 185.223.77.14 port 53421 ssh2 Mar 17 02:10:45 auth-server
+sshd[1024]: Failed password for invalid user root from 185.223.77.14
+port 53422 ssh2 Mar 17 02:11:03 auth-server sshd[1024]: Failed password
+for invalid user test from 185.223.77.14 port 53423 ssh2 Mar 17 02:18:56
+auth-server sshd[1058]: Accepted password for j.smith from 185.223.77.14
+port 53489 ssh2 Mar 17 02:19:02 auth-server sshd[1058]:
+pam_unix(sshd:session): session opened for user j.smith by (uid=0)
+
+Mar 17 02:22:14 crm-db postgres[2231]: connection authorized:
+user=j.smith database=customers Mar 17 02:23:01 crm-db postgres[2231]:
+statement: SELECT * FROM customer_data; Mar 17 02:24:45 crm-db
+postgres[2231]: statement: COPY customer_data TO ‘/tmp/export.csv’
+DELIMITER ‘,’ CSV HEADER; Mar 17 02:25:10 crm-db postgres[2231]:
+disconnection: session time: 0:02:56 user=j.smith database=customers
+
+Mar 17 02:26:33 auth-server sshd[1058]: pam_unix(sshd:session): session
+closed for user j.smith Mar 17 02:26:40 auth-server sshd[1102]: Failed
+password for j.smith from 185.223.77.14 port 53510 ssh2
