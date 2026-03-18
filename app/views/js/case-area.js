@@ -693,6 +693,28 @@ function displayCaseData() {
 
     console.log("Case Loaded:", caseData);
 
+    if (typeof window.applyClosedModeIfNeeded === 'function') {
+        window.applyClosedModeIfNeeded();
+    }
+
+    applyTabVisibility();
+
+}
+
+// Hide Report tab from non-lead investigators on open cases
+async function applyTabVisibility() {
+    if (caseData.status === 'closed') return; // closed mode handles this separately
+
+    const res  = await fetch('/get-user-info');
+    const user = await res.json();
+
+    const isLeadInvestigator = caseData.lead_investigator_id === user.userId
+                            || caseData.lead_investigator?.name === `${user.firstName} ${user.lastName}`;
+
+    const signoffTab = document.getElementById('signoff-tab')?.closest('li');
+    if (signoffTab) {
+        signoffTab.style.display = isLeadInvestigator ? '' : 'none';
+    }
 }
 
 /* ======================================================

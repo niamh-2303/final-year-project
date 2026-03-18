@@ -27,6 +27,7 @@ app.use(session({
 }));
 
 app.use(cors());
+app.use(requireCaseOpenFull);
 
 // Serve static files  - These are always accessible
 app.use('/css', express.static(path.join(__dirname, '../views/css')));
@@ -67,6 +68,43 @@ async function createAuditLog(caseId, userId, action, details) {
         console.log(`Audit log created: ${action} for case ${caseId}`);
     } catch (err) {
         console.error('Error creating audit log:', err);
+    }
+}
+
+async function requireCaseOpenFull(req, res, next) {
+    if (req.method === 'GET') return next();
+
+    const alwaysAllowed = [
+        /\/api\/cases\/\d+\/(archive|restore)$/,
+        /\/api\/cases\/\d+\/download-report$/,
+        /\/api\/cases\/\d+\/generate-report$/,
+        /\/api\/evidence\/\d+\/log-view$/,
+        /\/api\/invitations\/\d+\/respond$/,
+    ];
+    if (alwaysAllowed.some(p => p.test(req.path))) return next();
+
+    let caseId = null;
+    const urlMatch = req.path.match(/\/api\/cases\/(\d+)\//);
+    if (urlMatch) caseId = urlMatch[1];
+    if (!caseId && req.path === '/api/upload-evidence') {
+        caseId = req.body?.case_id || req.query?.case_id;
+    }
+    if (!caseId) return next();
+
+    try {
+        const result = await sql`SELECT status FROM cases WHERE case_id = ${caseId}`;
+        if (result.length === 0) return next();
+        if (result[0].status === 'closed') {
+            console.log(`[Closed Case Guard] Blocked ${req.method} ${req.path} — case ${caseId} is closed`);
+            return res.status(403).json({
+                success: false,
+                msg: 'This case is closed. No modifications are permitted.'
+            });
+        }
+        next();
+    } catch (err) {
+        console.error('requireCaseOpen middleware error:', err);
+        next();
     }
 }
 
@@ -419,7 +457,7 @@ app.get('/get-user-info', requireLogin, async (req, res) => {
 
     try {
         const result = await sql`
-            SELECT first_name, last_name, email, role
+            SELECT user_id, first_name, last_name, email, role            
             FROM users
             WHERE email = ${req.session.user}
         `;
@@ -430,12 +468,13 @@ app.get('/get-user-info', requireLogin, async (req, res) => {
 
         const user = result[0];
         res.json({
-            success: true,
-            firstName: user.first_name,
-            lastName: user.last_name,
-            email: user.email,
-            role: user.role
-        });
+        success: true,
+        userId: user.user_id,   
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        role: user.role
+    });
 
     } catch (error) {
         console.error('Error fetching user info:', error);
@@ -2137,7 +2176,6 @@ app.post('/api/cases/:id/generate-report', requireInvestigator, async (req, res)
     const { execFile } = require('child_process');
 
     try {
-        // ── Auth ───────────────────────────────────────────────
         const user = await sql`SELECT user_id, first_name, last_name FROM users WHERE email = ${userEmail}`;
         if (user.length === 0) return res.status(401).json({ success: false, msg: 'User not found' });
         const userId      = user[0].user_id;
@@ -2160,7 +2198,6 @@ app.post('/api/cases/:id/generate-report', requireInvestigator, async (req, res)
 
         const theCase = caseData[0];
 
-        // ── Gather all data ─────────────────────────────────────
 
         // Lead investigator
         const leadInv = await sql`
@@ -2214,7 +2251,7 @@ app.post('/api/cases/:id/generate-report', requireInvestigator, async (req, res)
             ORDER BY al.timestamp ASC
         `;
 
-        // ── Integrity check ─────────────────────────────────────
+        // Integrity check 
         const uploadsDir = path.join(__dirname, 'uploads');
         const integrityResults = [];
 
@@ -2255,10 +2292,11 @@ app.post('/api/cases/:id/generate-report', requireInvestigator, async (req, res)
             .replace('GMT', 'UTC')
             .replace(/:\d{2} UTC/, ' UTC');
 
-        // ── Build JSON payload for Python script ────────────────
+        // Build JSON payload for Python script 
         const reportPayload = {
             case: {
                 ...theCase,
+                status:            'closed',
                 lead_investigator: leadInv[0] || null,
                 client:            client[0]  || null,
                 investigators:     investigators,
@@ -2280,7 +2318,7 @@ app.post('/api/cases/:id/generate-report', requireInvestigator, async (req, res)
             },
         };
 
-        // ── Write temp JSON and call Python ────────────────────
+        // Write temp JSON and call Python 
         const tmpJson = path.join(os.tmpdir(), `dfir_case_${caseId}_${Date.now()}.json`);
         const pdfDir  = path.join(__dirname, 'reports');
         if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
@@ -2290,8 +2328,7 @@ app.post('/api/cases/:id/generate-report', requireInvestigator, async (req, res)
 
         fs.writeFileSync(tmpJson, JSON.stringify(reportPayload));
 
-        // Resolve script path – assume generate_report.py lives in the same
-        // directory as server.js (i.e. src/)
+        // Resolve script path 
         const scriptPath = path.join(__dirname, 'generate_report.py');
 
         await new Promise((resolve, reject) => {
@@ -2306,7 +2343,7 @@ app.post('/api/cases/:id/generate-report', requireInvestigator, async (req, res)
             );
         });
 
-        // ── Store report path + close case ──────────────────────
+        //Store report path + close case
         await sql`
             UPDATE cases
             SET status     = 'closed',
@@ -2315,7 +2352,7 @@ app.post('/api/cases/:id/generate-report', requireInvestigator, async (req, res)
             WHERE case_id = ${caseId}
         `;
 
-        // ── Audit log entries ───────────────────────────────────
+        // Audit log entries 
         const integrityStatus = allMatch
             ? `All ${integrityResults.length} evidence items passed SHA-256 integrity check`
             : `WARNING: ${integrityResults.filter(r => !r.match).length} evidence item(s) failed integrity check`;
@@ -2326,7 +2363,7 @@ app.post('/api/cases/:id/generate-report', requireInvestigator, async (req, res)
         await createAuditLog(parseInt(caseId), userId, 'REPORT_GENERATED',
             `Final report generated: ${pdfFileName}. Case closed.`);
 
-        // ── Respond ─────────────────────────────────────────────
+        // Respond 
         res.json({
             success:        true,
             msg:            'Report generated and case closed successfully',

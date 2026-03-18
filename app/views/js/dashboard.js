@@ -17,115 +17,134 @@ async function loadCases() {
 // Display cases in the active tab
 function displayCases(cases) {
     const activeTab = document.getElementById('active');
-    const allTab = document.getElementById('all');
+    const allTab    = document.getElementById('all');
 
-    // Filter active cases (exclude deleted)
-    const activeCases = cases.filter(c => c.status === 'active' && !c.is_deleted);
-    
-    // Display active cases
+    const activeCases    = cases.filter(c => c.status === 'active' && !c.is_deleted);
+    const nonDeletedCases = cases.filter(c => !c.is_deleted);
+
+    const tableHead = `
+        <thead>
+            <tr>
+                <th>Case Number</th>
+                <th>Case Name</th>
+                <th>Client</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>`;
+
     if (activeCases.length > 0) {
         activeTab.innerHTML = `
             <div class="cases-section">
                 <div class="table-responsive">
                     <table class="table cases-table">
-                        <thead>
-                            <tr>
-                                <th>Case Number</th>
-                                <th>Case Name</th>
-                                <th>Client</th>
-                                <th>Priority</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${activeCases.map(c => createCaseRow(c)).join('')}
-                        </tbody>
+                        ${tableHead}
+                        <tbody>${activeCases.map(c => createCaseRow(c)).join('')}</tbody>
                     </table>
                 </div>
-            </div>
-        `;
+            </div>`;
     }
 
-    // Display all cases (exclude deleted)
-    const nonDeletedCases = cases.filter(c => !c.is_deleted);
     if (nonDeletedCases.length > 0) {
         allTab.innerHTML = `
             <div class="cases-section">
                 <div class="table-responsive">
                     <table class="table cases-table">
-                        <thead>
-                            <tr>
-                                <th>Case Number</th>
-                                <th>Case Name</th>
-                                <th>Client</th>
-                                <th>Priority</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${nonDeletedCases.map(c => createCaseRow(c)).join('')}
-                        </tbody>
+                        ${tableHead}
+                        <tbody>${nonDeletedCases.map(c => createCaseRow(c)).join('')}</tbody>
                     </table>
                 </div>
-            </div>
-        `;
+            </div>`;
     }
 }
 
 // Create a table row for a case
 function createCaseRow(caseData) {
+    const isClosed = caseData.status === 'closed';
+
     const priorityClass = {
-        'low': 'badge bg-secondary',
-        'medium': 'badge bg-warning',
-        'high': 'badge bg-danger',
+        'low':      'badge bg-secondary',
+        'medium':   'badge bg-warning text-dark',
+        'high':     'badge bg-danger',
         'critical': 'badge bg-dark'
     };
 
     const statusClass = {
-        'active': 'badge bg-success',
-        'pending': 'badge bg-warning',
-        'closed': 'badge bg-secondary'
+        'active':  'badge bg-success',
+        'pending': 'badge bg-warning text-dark',
+        'closed':  'badge bg-secondary'
     };
 
     const createdDate = new Date(caseData.created_at).toLocaleDateString();
 
+    // ── Closed case: only View Report + Archive ──────────────────────────────
+    if (isClosed) {
+        return `
+            <tr class="case-row-closed">
+                <td><strong>${caseData.case_number}</strong></td>
+                <td>
+                    ${caseData.case_name}
+                    <span class="closed-lock-badge">
+                        <i class="bi bi-lock-fill"></i> Closed
+                    </span>
+                </td>
+                <td>${caseData.client_name || 'N/A'}</td>
+                <td><span class="${priorityClass[caseData.priority] || 'badge bg-secondary'}">${caseData.priority}</span></td>
+                <td><span class="${statusClass[caseData.status]}">${caseData.status}</span></td>
+                <td>${createdDate}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger me-1"
+                            onclick="viewCase(${caseData.case_id})"
+                            title="View Report">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            onclick="confirmArchiveCase(${caseData.case_id}, '${escapeSingleQuotes(caseData.case_name)}')"
+                            title="Archive Case">
+                        <i class="bi bi-archive"></i>
+                    </button>
+                </td>
+            </tr>`;
+    }
+
+    // ── Active / pending: full action set ────────────────────────────────────
     return `
         <tr>
             <td><strong>${caseData.case_number}</strong></td>
             <td>${caseData.case_name}</td>
             <td>${caseData.client_name || 'N/A'}</td>
-            <td><span class="${priorityClass[caseData.priority]}">${caseData.priority}</span></td>
+            <td><span class="${priorityClass[caseData.priority] || 'badge bg-secondary'}">${caseData.priority}</span></td>
             <td><span class="${statusClass[caseData.status]}">${caseData.status}</span></td>
             <td>${createdDate}</td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="viewCase(${caseData.case_id})" title="View Case">
+                <button class="btn btn-sm btn-outline-primary me-1"
+                        onclick="viewCase(${caseData.case_id})"
+                        title="View Case">
                     <i class="bi bi-eye"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-success" onclick="editCase(${caseData.case_id})" title="Edit Case">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="confirmArchiveCase(${caseData.case_id}, '${caseData.case_name}')" title="Archive Case">
-                    <i class="bi bi-folder"></i>
+                <button class="btn btn-sm btn-outline-secondary"
+                        onclick="confirmArchiveCase(${caseData.case_id}, '${escapeSingleQuotes(caseData.case_name)}')"
+                        title="Archive Case">
+                    <i class="bi bi-archive"></i>
                 </button>
             </td>
-        </tr>
-    `;
+        </tr>`;
 }
 
-// load invitations into the Requests tab
+function escapeSingleQuotes(str) {
+    return (str || '').replace(/'/g, "\\'");
+}
+
+// Load invitations into the Requests tab
 async function loadInvitations() {
     try {
         const response = await fetch('/api/my-invitations');
-        const data = await response.json();
+        const data     = await response.json();
         const requestsTab = document.getElementById('requests');
 
-        if (!data.success || data.invitations.length === 0) {
-            return; // leave the empty state as-is
-        }
+        if (!data.success || data.invitations.length === 0) return;
 
         requestsTab.innerHTML = `
             <div class="cases-section">
@@ -152,23 +171,22 @@ async function loadInvitations() {
                                     <td>${inv.priority}</td>
                                     <td>${new Date(inv.created_at).toLocaleDateString()}</td>
                                     <td>
-                                        <button class="btn btn-sm btn-success me-1" onclick="respondToInvitation(${inv.invitation_id}, 'accept')">
+                                        <button class="btn btn-sm btn-success me-1"
+                                                onclick="respondToInvitation(${inv.invitation_id}, 'accept')">
                                             <i class="bi bi-check-lg"></i> Accept
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger" onclick="respondToInvitation(${inv.invitation_id}, 'decline')">
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                onclick="respondToInvitation(${inv.invitation_id}, 'decline')">
                                             <i class="bi bi-x-lg"></i> Decline
                                         </button>
                                     </td>
-                                </tr>
-                            `).join('')}
+                                </tr>`).join('')}
                         </tbody>
                     </table>
                 </div>
-            </div>
-        `;
+            </div>`;
 
-        // Show count badge on the tab
-        document.getElementById('requests-tab').innerHTML = 
+        document.getElementById('requests-tab').innerHTML =
             `Requests <span class="badge bg-danger ms-1">${data.invitations.length}</span>`;
 
     } catch (error) {
@@ -178,21 +196,22 @@ async function loadInvitations() {
 
 async function respondToInvitation(invitationId, action) {
     try {
-        const res = await fetch(`/api/invitations/${invitationId}/respond`, {
-            method: 'POST',
+        const res  = await fetch(`/api/invitations/${invitationId}/respond`, {
+            method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action })
+            body:    JSON.stringify({ action })
         });
-
         const data = await res.json();
 
         if (data.success) {
             showNotification(
-                action === 'accept' ? 'Case accepted! It will now appear in your cases.' : 'Invitation declined.',
+                action === 'accept'
+                    ? 'Case accepted! It will now appear in your cases.'
+                    : 'Invitation declined.',
                 'success'
             );
-            loadInvitations(); // refresh requests tab
-            loadCases();       // refresh cases tab 
+            loadInvitations();
+            loadCases();
         } else {
             showNotification('Error: ' + data.msg, 'error');
         }
@@ -201,37 +220,29 @@ async function respondToInvitation(invitationId, action) {
     }
 }
 
-// Confirm archive with modal
 function confirmArchiveCase(caseId, caseName) {
-    const confirmed = confirm(`Are you sure you want to archive case "${caseName}"?\n\nThis case will be moved to Archived Cases.`);
-    
-    if (confirmed) {
+    if (confirm(`Archive case "${caseName}"?\n\nIt will be moved to Archived Cases.`)) {
         archiveCase(caseId);
     }
 }
 
-// Archive Case
 async function archiveCase(caseId) {
     try {
         const response = await fetch(`/api/cases/${caseId}/archive`, {
-            method: 'POST',
+            method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                is_archived: true,          
-                archived_at: new Date().toISOString()  
+            body:    JSON.stringify({
+                is_archived: true,
+                archived_at: new Date().toISOString()
             })
         });
-
         const data = await response.json();
 
         if (data.success) {
-            // Show success message
-            showNotification('Case moved to Archive Cases successfully', 'success');
-            
-            // Reload cases to refresh the view
+            showNotification('Case moved to Archive successfully', 'success');
             loadCases();
         } else {
-            showNotification('Failed to archive case: ' + data.message, 'error');
+            showNotification('Failed to archive case: ' + (data.message || data.msg), 'error');
         }
     } catch (error) {
         console.error('Error archiving case:', error);
@@ -239,76 +250,64 @@ async function archiveCase(caseId) {
     }
 }
 
-// Show notification
 function showNotification(message, type = 'info') {
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} notification-toast`;
     notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        min-width: 300px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        animation: slideIn 0.3s ease-out;
-    `;
-    
+        position: fixed; top: 20px; right: 20px; z-index: 9999;
+        min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s ease-out;`;
     notification.innerHTML = `
         <div class="d-flex align-items-center">
             <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
             <span>${message}</span>
-        </div>
-    `;
-    
+        </div>`;
     document.body.appendChild(notification);
-    
-    // Remove after 3 seconds
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s ease-out';
         setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
 
-// View case details
 function viewCase(caseId) {
     window.location.href = `case-area.html?id=${caseId}`;
 }
 
-// Edit case (also goes to case area)
-function editCase(caseId) {
-    window.location.href = `case-area.html?id=${caseId}`;
-}
 
-// Load cases when page loads
 document.addEventListener('DOMContentLoaded', () => {
     loadCases();
     loadInvitations();
 });
 
-// Add CSS animation for notifications
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideIn {
-        from {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
+        from { transform: translateX(400px); opacity: 0; }
+        to   { transform: translateX(0);     opacity: 1; }
     }
-    
     @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(400px);
-            opacity: 0;
-        }
+        from { transform: translateX(0);     opacity: 1; }
+        to   { transform: translateX(400px); opacity: 0; }
+    }
+
+    /* Closed case row — slightly muted */
+    .case-row-closed td { color: #6b7280; }
+    .case-row-closed td:first-child strong { color: #374151; }
+
+    /* Small "Closed" lock badge next to the case name */
+    .closed-lock-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 10px;
+        font-weight: 600;
+        color: #6b7280;
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        padding: 1px 6px;
+        margin-left: 8px;
+        vertical-align: middle;
     }
 `;
 document.head.appendChild(style);
