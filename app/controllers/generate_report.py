@@ -36,7 +36,7 @@ from reportlab.platypus import (
 from reportlab.platypus.flowables import Flowable
 from reportlab.pdfgen import canvas as pdfcanvas
 
-# ── Palette ────────────────────────────────────────────────────────────────────
+# ==Palette ===
 DARK_NAVY    = colors.HexColor("#1a2332")
 MID_NAVY     = colors.HexColor("#2d3f55")
 ACCENT_BLUE  = colors.HexColor("#3b82f6")
@@ -61,7 +61,7 @@ PAGE_W, PAGE_H = A4
 MARGIN = 2.0 * cm
 
 
-# ── Custom Flowables ───────────────────────────────────────────────────────────
+#==Custom Flowables ==
 class ColorBar(Flowable):
     def __init__(self, color, height=4):
         super().__init__()
@@ -147,7 +147,7 @@ class PageNumCanvas(pdfcanvas.Canvas):
         self.restoreState()
 
 
-# ── Styles ─────────────────────────────────────────────────────────────────────
+# == Styles ==
 def make_styles():
     base = getSampleStyleSheet()
     def ps(name, **kw):
@@ -214,7 +214,7 @@ def make_styles():
 S = make_styles()
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# == Helpers ==
 def p(text, style="body"):
     return Paragraph(str(text) if text else "", S[style])
 
@@ -317,7 +317,7 @@ def data_table(headers, rows, col_widths=None, small=False,
     return t
 
 
-# ── CRITICAL WARNING PAGE ──────────────────────────────────────────────────────
+# == CRITICAL WARNING PAGE ==
 def critical_warning_page(story, failed_items, case_number):
     usable = PAGE_W - 2 * MARGIN
 
@@ -429,7 +429,7 @@ def critical_warning_page(story, failed_items, case_number):
     story.append(PageBreak())
 
 
-# ── Cover Page ─────────────────────────────────────────────────────────────────
+# == Cover Page ==
 def cover_page(story, case, report_meta, failed_items):
     usable   = PAGE_W - 2 * MARGIN
     has_fail = bool(failed_items)
@@ -522,7 +522,7 @@ def cover_page(story, case, report_meta, failed_items):
     story.append(PageBreak())
 
 
-# ── Table of Contents ──────────────────────────────────────────────────────────
+# == Table of Contents ==
 def toc_page(story, sections, failed_items):
     story.append(SectionHeader("Table of Contents"))
     story.append(sp(10))
@@ -566,7 +566,7 @@ def toc_page(story, sections, failed_items):
     story.append(PageBreak())
 
 
-# ── Section 1: Overview ────────────────────────────────────────────────────────
+# == Section 1: Overview ==
 def section_overview(story, case, overview_text):
     story.append(SectionHeader("1. Case Overview"))
     story.append(sp(10))
@@ -591,7 +591,7 @@ def section_overview(story, case, overview_text):
     story.append(PageBreak())
 
 
-# ── Section 2: Team ────────────────────────────────────────────────────────────
+# == Section 2: Team==
 def section_team(story, case):
     story.append(SectionHeader("2. Investigation Team"))
     story.append(sp(10))
@@ -608,7 +608,7 @@ def section_team(story, case):
     story.append(PageBreak())
 
 
-# ── Section 3: Evidence Log ────────────────────────────────────────────────────
+# == Section 3: Evidence Log ==
 def section_evidence(story, evidence_list, integrity_results):
     has_fail     = any(not r.get("match") for r in integrity_results)
     failed_items = [r for r in integrity_results if not r.get("match")]
@@ -623,7 +623,7 @@ def section_evidence(story, evidence_list, integrity_results):
         story.append(PageBreak())
         return
 
-    # ── Top-level banner ────────────────────────────────────────────────────────
+    # == Top-level banner ==
     if has_fail:
         names_list = "\n".join(f"  •  {i.get('evidence_name','?')}" for i in failed_items)
         banner_rows = [
@@ -669,7 +669,7 @@ def section_evidence(story, evidence_list, integrity_results):
     story.append(banner)
     story.append(sp(14))
 
-    # ── 3a: Summary integrity table ─────────────────────────────────────────────
+    # == 3a: Summary integrity table ==
     story.append(p("3a — Integrity Check Summary", "label"))
     story.append(sp(4))
 
@@ -701,7 +701,7 @@ def section_evidence(story, evidence_list, integrity_results):
                             danger_header=has_fail, fail_rows=fail_rows))
     story.append(sp(16))
 
-    # ── 3b: Hash diff tables (only for failed items) ─────────────────────────
+    # ==3b: Hash diff tables (only for failed items) ==
     if has_fail:
         story.append(p("3b — Side-by-Side Hash Comparison for Failed Items", "label"))
         story.append(sp(6))
@@ -753,7 +753,7 @@ def section_evidence(story, evidence_list, integrity_results):
 
         story.append(sp(4))
 
-    # ── 3c: Detailed evidence records ─────────────────────────────────────────
+    #== 3c: Detailed evidence records ==
     story.append(p("3c — Detailed Evidence Records", "label"))
     story.append(sp(6))
 
@@ -833,7 +833,7 @@ def section_evidence(story, evidence_list, integrity_results):
     story.append(PageBreak())
 
 
-# ── Section 4: Findings ────────────────────────────────────────────────────────
+#== Section 4: Findings ==
 def section_findings(story, findings, recommendations):
     story.append(SectionHeader("4. Findings & Recommendations"))
     story.append(sp(10))
@@ -847,7 +847,7 @@ def section_findings(story, findings, recommendations):
     story.append(PageBreak())
 
 
-# ── Section 5: Tools ───────────────────────────────────────────────────────────
+# ==Section 5: Tools ==
 def section_tools(story, tools):
     story.append(SectionHeader("5. Tools Used"))
     story.append(sp(10))
@@ -864,7 +864,7 @@ def section_tools(story, tools):
     story.append(PageBreak())
 
 
-# ── Section 6: Chain of Custody ───────────────────────────────────────────────
+#== Section 6: Chain of Custody ==
 def section_coc(story, coc_records):
     story.append(SectionHeader("6. Chain of Custody"))
     story.append(sp(10))
@@ -900,7 +900,7 @@ def section_coc(story, coc_records):
     story.append(PageBreak())
 
 
-# ── Section 7: Audit Log ───────────────────────────────────────────────────────
+# ==Section 7: Audit Log ==
 def section_audit(story, audit_log):
     story.append(SectionHeader("7. System Audit Log"))
     story.append(sp(10))
@@ -925,7 +925,7 @@ def section_audit(story, audit_log):
     story.append(PageBreak())
 
 
-# ── Section 8: Sign-Off ────────────────────────────────────────────────────────
+# == Section 8: Sign-Off ==
 def section_signoff(story, report_meta, failed_items):
     has_fail = bool(failed_items)
     story.append(SectionHeader("8. Sign-Off & Certification", danger=has_fail))
@@ -997,7 +997,7 @@ def section_signoff(story, report_meta, failed_items):
     story.append(p("Auto-generated by DFIR Case Management System.", "note"))
 
 
-# ── Master builder ─────────────────────────────────────────────────────────────
+#Master builder 
 def build_report(data: dict, output_path: str):
     case          = data.get("case", {})
     overview_text = data.get("overview", "")

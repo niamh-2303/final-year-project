@@ -1386,7 +1386,6 @@ app.post('/api/cases/:id/overview', requireInvestigator, async (req, res) => {
 app.get('/api/cases/:id/findings', requireRole('investigator', 'client'), async (req, res) => {
     const caseId = req.params.id;
     // Same authorization logic as overview
-    // ... (similar to overview endpoint)
     
     try {
         const findings = await sql`

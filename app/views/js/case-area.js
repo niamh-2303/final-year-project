@@ -1504,16 +1504,21 @@ async function loadOverview() {
             document.getElementById('overviewTextarea').value = overview;
             originalOverview = overview;
         
-            if (hasContent) {
-                document.getElementById('editOverviewBtn').style.display = 'inline-block';
-                document.getElementById('saveOverviewBtn').style.display = 'none';
+            if (userRole === 'investigator') {
+                if (hasContent) {
+                    document.getElementById('editOverviewBtn').style.display = 'inline-block';
+                    document.getElementById('saveOverviewBtn').style.display = 'none';
+                } else {
+                    document.getElementById('editOverviewBtn').style.display = 'inline-block';
+                    document.getElementById('saveOverviewBtn').style.display = 'inline-block';
+                }
+                document.getElementById('cancelOverviewBtn').style.display = 'none';
             } else {
-                document.getElementById('editOverviewBtn').style.display = 'inline-block';
-                document.getElementById('saveOverviewBtn').style.display = 'inline-block';
+                // Client - hide all buttons
+                document.getElementById('editOverviewBtn').style.display = 'none';
+                document.getElementById('saveOverviewBtn').style.display = 'none';
+                document.getElementById('cancelOverviewBtn').style.display = 'none';
             }
-            document.getElementById('cancelOverviewBtn').style.display = 'none';
-            document.getElementById('overviewTextarea').style.display = 'none';
-            document.getElementById('overviewDisplay').style.display = 'block';
         }
     } catch (error) {
         console.error('Error loading overview:', error);
@@ -1593,16 +1598,20 @@ async function loadFindings() {
             originalFindings = findings;
             originalRecommendations = recommendations;
 
-            if (hasContent) {
-                document.getElementById('editFindingsBtn').style.display = 'inline-block';
-                document.getElementById('saveFindingsBtn').style.display = 'none';
+            if (userRole === 'investigator') {
+                if (hasContent) {
+                    document.getElementById('editFindingsBtn').style.display = 'inline-block';
+                    document.getElementById('saveFindingsBtn').style.display = 'none';
+                } else {
+                    document.getElementById('editFindingsBtn').style.display = 'inline-block';
+                    document.getElementById('saveFindingsBtn').style.display = 'inline-block';
+                }
+                document.getElementById('cancelFindingsBtn').style.display = 'none';
             } else {
-                document.getElementById('editFindingsBtn').style.display = 'inline-block';
-                document.getElementById('saveFindingsBtn').style.display = 'inline-block';
+                document.getElementById('editFindingsBtn').style.display = 'none';
+                document.getElementById('saveFindingsBtn').style.display = 'none';
+                document.getElementById('cancelFindingsBtn').style.display = 'none';
             }
-            document.getElementById('cancelFindingsBtn').style.display = 'none';
-            document.getElementById('findingsEdit').style.display = 'none';
-            document.getElementById('findingsDisplay').style.display = 'block';
         }
     } catch (error) {
         console.error('Error loading findings:', error);
@@ -1899,6 +1908,8 @@ window.changeCaseStatus = changeCaseStatus;
 /* ======================================================
    UPDATE PAGE LOAD TO INCLUDE NEW FUNCTIONS
 ====================================================== */
+let userRole = null;
+
 window.addEventListener("DOMContentLoaded", async () => {
     const params = new URLSearchParams(window.location.search);
     caseID = params.get("id");
@@ -1908,6 +1919,11 @@ window.addEventListener("DOMContentLoaded", async () => {
         window.location.href = "dashboard.html";
         return;
     }
+
+    // Fetch and store role globally
+    const userResponse = await fetch('/get-user-info');
+    const userData = await userResponse.json();
+    userRole = userData.role;
 
     await loadCaseData();
     loadEvidenceList(caseID);
