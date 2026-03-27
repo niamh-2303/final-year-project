@@ -30,26 +30,6 @@ async function calculateSHA256(file) {
     }
 }
 
-function extractMetadata(file) {
-    return new Promise((resolve, reject) => {
-        EXIF.getData(file, function() {
-            const allMetaData = EXIF.getAllTags(this);
-            
-            if (Object.keys(allMetaData).length === 0) {
-                resolve(null);
-            } else {
-                resolve(allMetaData);
-            }
-        });
-    });
-}
-
-function formatValue(value) {
-    if (value === null || value === undefined) return 'N/A';
-    if (typeof value === 'object') return JSON.stringify(value);
-    return value.toString();
-}
-
 function displayMetadata(metadata, file) {
     const tbody = document.getElementById('metadataBody');
     tbody.innerHTML = '';
@@ -60,12 +40,18 @@ function displayMetadata(metadata, file) {
         row.insertCell(1).textContent = value;
     };
 
-    // Basic file info
-    addRow('File Name', file.name);
-    addRow('File Size', formatFileSize(file.size));
-    addRow('File Type', file.type);
-    addRow('Last Modified', new Date(file.lastModified).toLocaleString());
+    // Basic file info - ALWAYS display these
+    addRow('File Name', file.name || 'Unknown');
+    addRow('File Size', formatFileSize(file.size) || 'Unknown');
+    addRow('File Type', file.type || 'Unknown');
+    addRow('Last Modified', file.lastModified ? new Date(file.lastModified).toLocaleString() : 'Unknown');
 
+    // Only show image dimensions if EXIF data has them
+    if (metadata && metadata.PixelXDimension && metadata.PixelYDimension) {
+        addRow('Image Dimensions', `${metadata.PixelXDimension}x${metadata.PixelYDimension}`);
+    }
+
+    // Only show EXIF section if metadata exists
     if (!metadata || Object.keys(metadata).length === 0) {
         const row = tbody.insertRow();
         row.insertCell(0).innerHTML = '<strong>EXIF Data</strong>';
@@ -73,7 +59,7 @@ function displayMetadata(metadata, file) {
         return;
     }
 
-    // Add EXIF metadata
+    // Add EXIF metadata section
     const separatorRow = tbody.insertRow();
     separatorRow.innerHTML = '<td colspan="2"><strong>--- EXIF Metadata ---</strong></td>';
 
@@ -102,6 +88,52 @@ function displayMetadata(metadata, file) {
     Object.keys(importantFields).forEach(key => {
         if (metadata[key] !== undefined) {
             addRow(importantFields[key], formatValue(metadata[key]));
+        }
+    });
+}
+
+function formatValue(value) {
+    if (value === null || value === undefined) return 'N/A';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return value.toString();
+}
+
+function extractMetadata(file) {
+    return new Promise((resolve, reject) => {
+        // Check if EXIF library is available
+        if (typeof EXIF === 'undefined') {
+            console.warn('EXIF.js library not loaded yet');
+            resolve(null);
+            return;
+        }
+
+        // Only attempt EXIF for image files
+        if (!file.type.startsWith('image/')) {
+            console.log('File is not an image type:', file.type);
+            resolve(null);
+            return;
+        }
+
+        try {
+            EXIF.getData(file, function() {
+                try {
+                    const allMetaData = EXIF.getAllTags(this);
+                    console.log('EXIF metadata found:', allMetaData);
+                    
+                    if (Object.keys(allMetaData).length === 0) {
+                        console.warn('No EXIF tags found in image');
+                        resolve(null);
+                    } else {
+                        resolve(allMetaData);
+                    }
+                } catch (error) {
+                    console.error("Error getting EXIF tags:", error);
+                    resolve(null);
+                }
+            });
+        } catch (error) {
+            console.error("Error calling EXIF.getData:", error);
+            resolve(null);
         }
     });
 }
@@ -573,7 +605,7 @@ function attachFileUploadHandlers() {
         document.getElementById('evidenceSummary').value = '';
     });
 
-    // Upload Evidence
+ // Upload Evidence
     submitButton.addEventListener('click', async () => {
         console.log('=== UPLOAD BUTTON CLICKED ===');
         
@@ -597,6 +629,11 @@ function attachFileUploadHandlers() {
         formData.append('case_id', caseID);
         formData.append('file_hash', fileHash);
         formData.append('evidence_summary', evidenceSummary);
+        
+        // ADD THESE THREE LINES - Store file info
+        formData.append('file_size', selectedFile.size);
+        formData.append('file_type', selectedFile.type);
+        formData.append('file_name', selectedFile.name);
 
         // Add extracted metadata
         if (extractedMetadata) {
