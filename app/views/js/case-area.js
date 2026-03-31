@@ -774,6 +774,21 @@ function populateTeamTab() {
         other.innerHTML = "<p>No investigators assigned.</p>";
     }
 
+    const pending = document.getElementById("pendingInvestigators");
+    if (pending) {
+        pending.innerHTML = "";
+
+        if (caseData.pending_investigators?.length > 0) {
+            caseData.pending_investigators.forEach(i => {
+                const p = document.createElement("p");
+                p.innerHTML = `${i.name} <span class="badge bg-warning text-dark ms-2">Pending</span>`;
+                pending.appendChild(p);
+            });
+        } else {
+            pending.innerHTML = "<p>No pending investigator invitations.</p>";
+        }
+    }
+
     document.getElementById("clientInfo").textContent =
         caseData.client?.name || "No client assigned";
 }

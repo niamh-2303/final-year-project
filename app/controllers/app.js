@@ -848,13 +848,23 @@ app.get('/api/case/:id', requireRole('investigator', 'client'), async (req, res)
             AND ct.investigator_id != ${caseData.lead_investigator_id}
         `;
 
+        const pendingInvestigators = await sql`
+            SELECT u.user_id, u.first_name || ' ' || u.last_name AS name
+            FROM case_invitations ci
+            JOIN users u ON u.user_id = ci.user_id
+            WHERE ci.case_id = ${caseId}
+              AND ci.role = 'investigator'
+              AND ci.status = 'pending'
+        `;
+
         res.json({
             success: true,
             case: {
                 ...caseData,
                 lead_investigator: leadInvestigator[0] || null,
                 client: client[0] || null,
-                investigators: investigators
+                investigators: investigators,
+                pending_investigators: pendingInvestigators
             }
         });
 
