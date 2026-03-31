@@ -46,6 +46,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 reportLinks.forEach(link => {
                     link.href = 'client-reports.html';
                 });
+
+                const archiveLinks = document.querySelectorAll('.nav-link[href="archive-cases.html"]');
+                archiveLinks.forEach(link => {
+                    link.href = 'client-archive-cases.html';
+                });
             }
             
             // Hide/show role-specific elements

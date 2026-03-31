@@ -238,6 +238,14 @@ app.get('/client-reports.html', requireClient, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/client-reports.html'));
 });
 
+app.get('/client-archive-cases', requireClient, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/client-archive-cases.html'));
+});
+
+app.get('/client-archive-cases.html', requireClient, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/client-archive-cases.html'));
+});
+
 //================== SHARED ROUTES (Multiple roles can access) =======
 
 app.get('/case-area', requireRole('investigator', 'client'), (req, res) => {
@@ -2537,6 +2545,40 @@ app.get('/api/client/reports', requireClient, async (req, res) => {
     } catch (err) {
         console.error('Error fetching client reports:', err);
         res.status(500).json({ success: false, msg: 'Error fetching client reports' });
+    }
+});
+
+app.get('/api/client/my-cases/archived', requireClient, async (req, res) => {
+    try {
+        const userEmail = req.session.user;
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+
+        if (user.length === 0) {
+            return res.status(404).json({ success: false, msg: 'User not found' });
+        }
+
+        const userId = user[0].user_id;
+
+        const cases = await sql`
+            SELECT
+                c.case_id,
+                c.case_number,
+                c.case_name,
+                c.priority,
+                c.status,
+                c.archived_at,
+                inv.first_name || ' ' || inv.last_name AS investigator_name
+            FROM cases c
+            LEFT JOIN users inv ON c.investigator_id = inv.user_id
+            WHERE c.client_id = ${userId}
+            AND c.is_archived = TRUE
+            ORDER BY c.archived_at DESC
+        `;
+
+        res.json({ success: true, cases });
+    } catch (err) {
+        console.error('Error fetching client archived cases:', err);
+        res.status(500).json({ success: false, msg: 'Error fetching client archived cases' });
     }
 });
 

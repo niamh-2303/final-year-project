@@ -2266,3 +2266,17 @@ textarea.form-control {
   width: calc(100% - 80px);
   margin: 32px auto 40px;
 }
+
+.client-dashboard .content-header {
+  background: #f8fbff;
+  border-color: rgba(13, 110, 253, 0.14);
+}
+
+.client-dashboard .page-title {
+  color: #0d6efd;
+}
+
+.client-dashboard .page-subtitle {
+  color: #6c757d;
+  font-size: 0.95rem;
+}

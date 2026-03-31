@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Reports - DFIR</title>
+    <title>Client Archived Cases - DFIR</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="css/dashboard-style.css">
 </head>
-<body class="client-reports">
+<body class="client-archive-cases">
     <div class="container-fluid p-0">
         <div class="row g-0">
             <nav class="col-md-2 sidebar">
@@ -34,7 +34,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link active" href="client-reports.html">
+                            <a class="nav-link" href="client-reports.html">
                                 <i class="bi bi-file-earmark-text"></i>
                                 <span>Reports</span>
                             </a>
@@ -46,7 +46,7 @@
                     <h6 class="sidebar-heading">SHORTCUTS</h6>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="client-archive-cases.html">
+                            <a class="nav-link active" href="client-archive-cases.html">
                                 <i class="bi bi-archive"></i>
                                 <span>Archive</span>
                             </a>
@@ -78,14 +78,13 @@
                                     <span>Home</span>
                                 </a>
                                 <i class="bi bi-chevron-right"></i>
-                                <span>Reports</span>
+                                <span>Archived Cases</span>
                             </div>
-                            <h1 class="page-title">Final Case Reports</h1>
-                            <p class="text-muted mb-0">Download PDF reports for your finished cases.</p>
+                            <h1 class="page-title">Archived Cases</h1>
                         </div>
                         <div class="header-actions">
                             <div class="dropdown">
-                                <button class="btn btn-profile-header" id="profileButton" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-profile-header" id="profileButton" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="User Profile">
                                     <i class="bi bi-person-circle"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end profile-dropdown-menu">
@@ -98,7 +97,8 @@
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <a class="dropdown-item" href="#" onclick="logout()">
-                                            <i class="bi bi-box-arrow-right"></i> Logout
+                                            <i class="bi bi-box-arrow-right"></i>
+                                            Logout
                                         </a>
                                     </li>
                                 </ul>
@@ -107,37 +107,7 @@
                     </div>
                 </div>
 
-                <div class="form-card">
-                    <div id="selectedReportBanner" class="alert alert-info d-none" role="alert"></div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Case Number</th>
-                                    <th>Case Name</th>
-                                    <th>Lead Investigator</th>
-                                    <th>Closed Date</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reportsTableBody">
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted">Loading reports...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div id="noReportsMessage" class="text-center text-muted mt-4 d-none">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="bi bi-file-earmark-pdf"></i>
-                        </div>
-                        <h3>No final reports available</h3>
-                        <p>Once your investigator generates a PDF report for a closed case, it will appear here.</p>
-                    </div>
-                </div>
+                <div id="archivedCasesContainer"></div>
             </main>
         </div>
     </div>
@@ -145,6 +115,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/logout.js"></script>
     <script src="js/profile.js"></script>
-    <script src="js/client-reports.js"></script>
+    <script src="js/client-archived-cases.js"></script>
 </body>
 </html>

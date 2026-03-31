@@ -56,6 +56,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             dashboardNavLinks.forEach(link => {
                 link.href = dashboardUrl;
             });
+
+            if (userRole === 'client') {
+                const reportLinks = document.querySelectorAll('.nav-link[href="reports.html"]');
+                reportLinks.forEach(link => {
+                    link.href = 'client-reports.html';
+                });
+
+                const archiveLinks = document.querySelectorAll('.nav-link[href="archive-cases.html"]');
+                archiveLinks.forEach(link => {
+                    link.href = 'client-archive-cases.html';
+                });
+            }
             
             // Hide/show elements based on role
             if (userRole === 'client') {
