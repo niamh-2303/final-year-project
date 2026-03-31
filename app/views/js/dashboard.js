@@ -4,10 +4,10 @@ async function loadCases() {
         const response = await fetch('/api/my-cases');
         const data = await response.json();
 
-        if (data.success && data.cases.length > 0) {
-            displayCases(data.cases);
+        if (data.success) {
+            displayCases(data.cases || []);
         } else {
-            console.log("No cases found");
+            console.log("Failed to load cases");
         }
     } catch (error) {
         console.error("Error loading cases:", error);
@@ -45,6 +45,8 @@ function displayCases(cases) {
                     </table>
                 </div>
             </div>`;
+    } else {
+        activeTab.innerHTML = `<div class="empty-state"><p>No active cases found.</p></div>`;
     }
 
     if (nonDeletedCases.length > 0) {
@@ -57,6 +59,8 @@ function displayCases(cases) {
                     </table>
                 </div>
             </div>`;
+    } else {
+        allTab.innerHTML = `<div class="empty-state"><p>No cases found.</p></div>`;
     }
 }
 
@@ -144,7 +148,11 @@ async function loadInvitations() {
         const data     = await response.json();
         const requestsTab = document.getElementById('requests');
 
-        if (!data.success || data.invitations.length === 0) return;
+        if (!data.success || data.invitations.length === 0) {
+            requestsTab.innerHTML = `<div class="empty-state"><p>No open invitations.</p></div>`;
+            document.getElementById('requests-tab').innerHTML = 'Requests';
+            return;
+        }
 
         requestsTab.innerHTML = `
             <div class="cases-section">

@@ -4,10 +4,10 @@ async function loadClientCases() {
         const response = await fetch('/api/my-cases');
         const data = await response.json();
 
-        if (data.success && data.cases.length > 0) {
-            displayClientCases(data.cases);
+        if (data.success) {
+            displayClientCases(data.cases || []);
         } else {
-            console.log("No cases found for client");
+            console.log("Failed to load client cases");
         }
     } catch (error) {
         console.error("Error loading cases:", error);
@@ -46,6 +46,8 @@ function displayClientCases(cases) {
                 </div>
             </div>
         `;
+    } else {
+        activeTab.innerHTML = `<div class="empty-state"><p>No active cases found.</p></div>`;
     }
 
     // Display all cases
@@ -72,6 +74,8 @@ function displayClientCases(cases) {
                 </div>
             </div>
         `;
+    } else {
+        allTab.innerHTML = `<div class="empty-state"><p>No cases found.</p></div>`;
     }
 }
 
@@ -118,7 +122,9 @@ async function loadInvitations() {
         const requestsTab = document.getElementById('requests');
 
         if (!data.success || data.invitations.length === 0) {
-            return; // leave the empty state as-is
+            requestsTab.innerHTML = `<div class="empty-state"><p>No open invitations.</p></div>`;
+            document.getElementById('requests-tab').innerHTML = 'Requests';
+            return;
         }
 
         requestsTab.innerHTML = `
@@ -186,7 +192,7 @@ async function respondToInvitation(invitationId, action) {
                 'success'
             );
             loadInvitations(); // refresh requests tab
-            loadCases();       // refresh cases tab (use loadClientCases() in client-cases.js)
+            loadClientCases(); // refresh cases tab
         } else {
             showNotification('Error: ' + data.msg, 'error');
         }
