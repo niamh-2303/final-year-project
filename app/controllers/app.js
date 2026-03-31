@@ -230,6 +230,14 @@ app.get('/client-dashboard.html', requireClient, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/client-dashboard.html'));
 });
 
+app.get('/client-reports', requireClient, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/client-reports.html'));
+});
+
+app.get('/client-reports.html', requireClient, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/client-reports.html'));
+});
+
 //================== SHARED ROUTES (Multiple roles can access) =======
 
 app.get('/case-area', requireRole('investigator', 'client'), (req, res) => {
@@ -661,6 +669,8 @@ app.get('/api/my-cases', requireRole('investigator', 'client'), async (req, res)
         res.status(500).json({ success: false, msg: "Error fetching cases" });
     }
 });
+
+
 
 // Search investigators (only users with role 'investigator')
 app.get("/api/search-investigator", requireInvestigator, async (req, res) => {
@@ -2478,6 +2488,57 @@ app.get('/api/cases/:id/report-status', requireRole('investigator', 'client'), a
     }
 });
 
+// Client report listing endpoint
+app.get('/api/client/reports', requireClient, async (req, res) => {
+    try {
+        const userEmail = req.session.user;
+        const user = await sql`SELECT user_id FROM users WHERE email = ${userEmail}`;
+
+        if (user.length === 0) {
+            return res.status(404).json({ success: false, msg: 'User not found' });
+        }
+
+        const userId = user[0].user_id;
+
+        const reports = await sql`
+            SELECT
+                c.case_id,
+                c.case_number,
+                c.case_name,
+                c.closed_at,
+                c.report_path,
+                inv.first_name || ' ' || inv.last_name AS investigator_name
+            FROM cases c
+            LEFT JOIN users inv ON c.investigator_id = inv.user_id
+            WHERE c.client_id = ${userId}
+            AND c.client_access = TRUE
+            AND c.report_path IS NOT NULL
+            AND (c.is_archived = FALSE OR c.is_archived IS NULL)
+            AND EXISTS (
+                SELECT 1 FROM case_invitations ci
+                WHERE ci.case_id = c.case_id
+                AND ci.user_id = ${userId}
+                AND ci.status = 'accepted'
+            )
+            ORDER BY c.closed_at DESC NULLS LAST, c.created_at DESC
+        `;
+
+        res.json({
+            success: true,
+            reports: reports.map(r => ({
+                case_id: r.case_id,
+                case_number: r.case_number,
+                case_name: r.case_name,
+                investigator_name: r.investigator_name,
+                closed_at: r.closed_at,
+                report_path: r.report_path
+            }))
+        });
+    } catch (err) {
+        console.error('Error fetching client reports:', err);
+        res.status(500).json({ success: false, msg: 'Error fetching client reports' });
+    }
+});
 
 // ================ ERROR HANDLING ====================
 

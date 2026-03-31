@@ -39,6 +39,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             dashboardNavLinks.forEach(link => {
                 link.href = dashboardUrl;
             });
+
+            // Send client users to the client reports page instead of the investigator reports page
+            if (userRole === 'client') {
+                const reportLinks = document.querySelectorAll('.nav-link[href="reports.html"]');
+                reportLinks.forEach(link => {
+                    link.href = 'client-reports.html';
+                });
+            }
             
             // Hide/show role-specific elements
             if (userRole === 'client') {
