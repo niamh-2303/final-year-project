@@ -2589,6 +2589,8 @@ app.use((req, res) => {
     res.redirect('/');
 });
 
+module.exports = app;
+
 // Start server
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

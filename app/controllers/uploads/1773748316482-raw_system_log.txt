@@ -17,3 +17,5 @@ disconnection: session time: 0:02:56 user=j.smith database=customers
 Mar 17 02:26:33 auth-server sshd[1058]: pam_unix(sshd:session): session
 closed for user j.smith Mar 17 02:26:40 auth-server sshd[1102]: Failed
 password for j.smith from 185.223.77.14 port 53510 ssh2
+
+--------ADDED SOME TEXT FOR TEST OF TAMPER------
