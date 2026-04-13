@@ -2590,6 +2590,7 @@ app.use((req, res) => {
 });
 
 module.exports = app;
+module.exports.computeFileHash = computeFileHash;
 
 // Start server
 const PORT = process.env.PORT || 8080;

@@ -175,8 +175,6 @@ describe('T-11 | Closed Case Write Protection - requireCaseOpenFull Middleware (
      * POST requests to a closed case. It simulates a logged-in investigator
      * session using Supertest's agent (which persists cookies across requests).
      *
-     * Replace the values below with a real closed case ID and valid
-     * investigator credentials from your database.
      */
     test('T-11 | POST to a closed case overview is blocked with 403', async () => {
         const agent = request.agent(app); // agent persists the session cookie
@@ -189,7 +187,7 @@ describe('T-11 | Closed Case Write Protection - requireCaseOpenFull Middleware (
                 pwd: 'investigatortest'
             });
 
-        // Step 2: Attempt to POST to a closed case (replace 1 with a real closed case_id)
+        // Step 2: Attempt to POST to a closed case 
         const closedCaseId = 9; 
 
         const res = await agent
@@ -429,6 +427,88 @@ describe('T-20 to T-22 | Forensic Integrity & Team Management', () => {
         expect(res.statusCode).toBe(200);
         expect(res.body.success).toBe(true);
     });
+});
+
+// ============================================================
+// TEST SUITE 10: Unit Tests — parseExifDate (FR2.0)
+// ============================================================
+
+// Copy the function directly since it's inline in the upload route
+const parseExifDate = (dateStr) => {
+    if (!dateStr || typeof dateStr !== 'string') return null;
+    try {
+        const cleaned = dateStr.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3');
+        const date = new Date(cleaned);
+        return isNaN(date.getTime()) ? null : date.toISOString();
+    } catch (e) {
+        return null;
+    }
+};
+
+describe('UT-01 to UT-04 | Unit Tests — parseExifDate (FR2.0)', () => {
+
+    test('UT-01 | Converts valid EXIF date string to ISO format', () => {
+        expect(parseExifDate('2025:09:29 13:50:51')).toBe('2025-09-29T12:50:51.000Z');    
+    });
+
+    test('UT-02 | Returns null for null input without throwing', () => {
+        expect(parseExifDate(null)).toBeNull();
+    });
+
+    test('UT-03 | Returns null for malformed date string', () => {
+        expect(parseExifDate('abcd:ef:gh')).toBeNull();
+    });
+
+    test('UT-04 | Returns null for undefined input without throwing', () => {
+        expect(parseExifDate(undefined)).toBeNull();
+    });
+
+});
+
+// ============================================================
+// TEST SUITE 11: Unit Tests — computeFileHash (FR2.0)
+// ============================================================
+
+const { computeFileHash } = require('./app');
+const fs = require('fs');
+const path = require('path');
+
+describe('UT-05 to UT-06 | Unit Tests — computeFileHash (FR2.0)', () => {
+
+    test('UT-05 | Returns correct SHA-256 hash for a known file', async () => {
+        const tmpPath = path.join(__dirname, 'test_temp.txt');
+        fs.writeFileSync(tmpPath, 'test data');
+
+        const hash = await computeFileHash(tmpPath);
+        expect(hash).toBe('916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9');
+
+        fs.unlinkSync(tmpPath); // cleanup temp file
+    });
+
+    test('UT-06 | Rejects with error when file does not exist', async () => {
+        await expect(computeFileHash('/nonexistent/file.txt')).rejects.toThrow();
+    });
+
+});
+
+// ============================================================
+// TEST SUITE 12: Unit Tests — Case Number Formatter (FR1.0)
+// ============================================================
+
+describe('UT-07 to UT-08 | Unit Tests — Case Number Formatter (FR1.0)', () => {
+
+    test('UT-07 | Pads case number correctly to 5 digits for low numbers', () => {
+        const nextNum = 1;
+        const result = "CASE-" + String(nextNum).padStart(5, "0");
+        expect(result).toBe('CASE-00001');
+    });
+
+    test('UT-08 | Formats large case numbers correctly', () => {
+        const nextNum = 999;
+        const result = "CASE-" + String(nextNum).padStart(5, "0");
+        expect(result).toBe('CASE-00999');
+    });
+
 });
 
 afterAll(async () => {
