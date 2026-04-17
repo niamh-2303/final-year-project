@@ -18,25 +18,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Update ALL possible dashboard links
             
-            // 1. Regular anchor links with href="dashboard.html"
+            // Regular anchor links with href="dashboard.html"
             const dashboardLinks = document.querySelectorAll('a[href="dashboard.html"]');
             dashboardLinks.forEach(link => {
                 link.href = dashboardUrl;
             });
             
-            // 2. Sidebar logo link
+            // Sidebar logo link
             const logoLinks = document.querySelectorAll('.sidebar-logo a');
             logoLinks.forEach(link => {
                 link.href = dashboardUrl;
             });
             
-            // 3. Breadcrumb navigation links
+            // Breadcrumb navigation links
             const breadcrumbLinks = document.querySelectorAll('.breadcrumb-link[href="dashboard.html"], .breadcrumb-nav a[href="dashboard.html"]');
             breadcrumbLinks.forEach(link => {
                 link.href = dashboardUrl;
             });
             
-            // 4. "Back to Dashboard" buttons (with various classes)
+            // "Back to Dashboard" buttons (with various classes)
             const backButtons = document.querySelectorAll(
                 'a[href="dashboard.html"].btn, ' +
                 'a[href="dashboard.html"].btn-primary, ' +
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             
-            // 5. Dashboard nav items in sidebar
+            // Dashboard nav items in sidebar
             const dashboardNavLinks = document.querySelectorAll('.nav-link[href="dashboard.html"]');
             dashboardNavLinks.forEach(link => {
                 link.href = dashboardUrl;

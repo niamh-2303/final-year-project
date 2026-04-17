@@ -1,12 +1,55 @@
-# final-year-project
-A DFIR case management web application
+Digital Forensics & Incident Response (DFIR) Case Management System
+Student: Niamh Armour (C22397066)
 
-# Deployment To make the database
+Project: Final Year Project - A secure web application for forensic case management.
 
-Run the users_only.sql file in a new database called database: "final_year_project"
-The credentials in db.js may have to be changed to adapt to the users local postgres credentials
+📖 Overview
+This application is a specialized management tool for forensic investigators. It provides a secure environment to track cases, manage evidence, and maintain a tamper-evident audit trail.
 
-# To deploy the web app
+Key Features
+Tamper-Evident Logging: Uses a SHA-256 blockchain-inspired hashing chain to link every action in the audit log.
 
-navigate to the controller subfolder within the app folder and run : node app.js.
-The web application will be deployed to a localhost server at port 8080.
+Role-Based Access Control (RBAC): Specific views and permissions for Investigators, Clients, and Admins.
+
+Evidence Integrity: Supports evidence uploads with automatic cryptographic hashing and EXIF data extraction.
+
+Case Security: A "Closed Case Guard" prevents any modifications to evidence or logs once a case has been officially closed.
+
+🛠️ Tech Stack
+Backend: Node.js, Express.js
+
+Database: PostgreSQL
+
+Security: Bcrypt (password hashing), Express-Session (session management), Validator (input sanitization)
+
+File Handling: Multer
+
+🚀 Deployment Instructions
+1. Database Setup
+Ensure PostgreSQL is installed and running on your machine.
+
+Create a new database named final_year_project.
+
+Execute the provided users_only.sql script to set up the necessary tables (users, cases, audit_log, etc.).
+
+Note: You may need to update the credentials in ./db.js (host, user, password) to match your local PostgreSQL configuration.
+
+2. Install Dependencies
+Navigate to the root of the project directory and run:
+
+Bash
+npm install
+This will install all required packages: express, cors, bcrypt, express-session, validator, multer, body-parser, and postgres.
+
+3. Running the Application
+To start the web server:
+
+Open your terminal and navigate to the controller subfolder:
+
+Bash
+cd app/controller
+Run the application:
+
+Bash
+node app.js
+The application will be deployed to: http://localhost:8080

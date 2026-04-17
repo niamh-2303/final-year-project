@@ -73,7 +73,7 @@
         </div>`;
     }
 
-    /* ── Step 0: Check whether a report already exists ─────── */
+    /* ── Check whether a report already exists ─────── */
     async function checkReportStatus() {
         try {
             const res  = await fetch(`/api/cases/${caseID}/report-status`);
@@ -94,7 +94,7 @@
         }
     }
 
-    /* ── Render: report already generated ───────────────────── */
+    /* ──  report already generated ───────────────────── */
     function renderReportExists(statusData) {
         setStep(3, true);
         const closedDate = statusData.closedAt
@@ -134,7 +134,7 @@
         </div>`;
     }
 
-    /* ── Render: case closed but no report file ─────────────── */
+    /* ──  case closed but no report file ─────────────── */
     function renderCaseClosedNoReport() {
         document.getElementById('signoffContent').innerHTML = `
         <div class="signoff-done-card">
@@ -152,7 +152,7 @@
         </div>`;
     }
 
-    /* ── Step 1: Integrity check panel ──────────────────────── */
+    /* ──  Integrity check panel ──────────────────────── */
     window.renderIntegrityCheckPanel = function () {
         setStep(1, false);
         document.getElementById('signoffContent').innerHTML = `
@@ -305,7 +305,7 @@
         document.getElementById('proceedBtn').style.display = 'inline-flex';
     }
 
-    /* ── Step 2: Review & Confirm panel ─────────────────────── */
+    /* ──  Review & Confirm panel ─────────────────────── */
     window.renderConfirmPanel = function () {
         if (!integrityChecked) {
             alert('Please run the integrity check first.');
@@ -390,7 +390,7 @@
         </div>`;
     };
 
-    /* ── Step 3: Generate report ─────────────────────────────── */
+    /* ──  Generate report ─────────────────────────────── */
     window.generateReport = async function () {
         const btn = document.getElementById('generateBtn');
         if (!btn) return;

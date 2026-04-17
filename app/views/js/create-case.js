@@ -1,7 +1,7 @@
 // ==============================
 // Store case data temporarily (Global declaration)
 // ==============================
-let tempCaseData = null; // Declared once at the top
+let tempCaseData = null; 
 
 // ==============================
 // Fetch current user info

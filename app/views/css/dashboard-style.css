@@ -377,7 +377,6 @@ body {
 /* ==================== RESPONSIVE ==================== */
 
 @media (max-width: 768px) {
-    /* 1. Shrink the sidebar width instead of hiding it */
     .sidebar {
         position: fixed;
         left: 0;
@@ -390,7 +389,7 @@ body {
         padding: 15px 0;
     }
 
-    /* 2. Hide all the text/labels */
+    /*Hide all the text/labels */
     .logo-text, 
     .sidebar-heading, 
     .profile-details, 
@@ -398,7 +397,7 @@ body {
         display: none !important;
     }
 
-    /* 3. Center the icons so they look clean */
+    /* Center the icons so they look clean */
     .sidebar-logo,
     .nav-item,
     .sidebar-profile {
@@ -416,13 +415,13 @@ body {
         padding: 12px 0;
     }
 
-    /* 4. Push the main content over so it doesn't go under the sidebar */
+    /* Push the main content over so it doesn't go under the sidebar */
     .main-content {
         margin-left: 80px !important;
         width: calc(100% - 80px);
     }
 
-    /* 5. Scale down the logo image to fit the 80px space */
+    /* Scale down the logo image to fit the 80px space */
     .sidebar-logo-img {
         width: 40px;
         height: auto;
@@ -714,7 +713,7 @@ textarea.form-control {
 }
 
 .btn-blue-back {
-    background-color: #ede9e9;   /* pale light grey */
+    background-color: #ede9e9;   
     color: #333;
     border-color: #d9d9d9;
 }
@@ -917,6 +916,7 @@ textarea.form-control {
     word-break: break-all;
 }
 
+/* Terminal View - No longer using a terminal but keeping it incase for future developments  */
 /* Terminal View - FAKE TERMINAL  */
 .terminal-window {
     background: #1e1e1e;
@@ -1058,7 +1058,7 @@ textarea.form-control {
     color: var(--text-primary);
 }
 
-/* Evidence Timeline (reuse existing timeline styles) */
+/* Evidence Timeline  */
 .evidence-timeline {
     position: relative;
     padding: 20px 0;
@@ -2203,7 +2203,7 @@ textarea.form-control {
 }
 
 
-/* ── Case area: closed banner ───────────────────────────────── */
+/* == Case area: closed banner =====================*/
 .closed-case-banner {
     margin: 0 0 0 0;
     padding: 0 0 12px 0;
@@ -2246,16 +2246,14 @@ textarea.form-control {
     font-size: 14px;
 }
 
-/* ── Case area: read-only overlay on hidden panes ───────────── */
-/* (fallback — panes are hidden via JS, but this ensures
-    they can't be flash-shown) */
+/* === Case area: read-only overlay on hidden panes ========= */
 #caseTabsContent .tab-pane[data-closed-hidden="true"] {
     display: none !important;
     pointer-events: none;
 }
 
 
-/*clients report page*/
+/*========clients report page=========*/
 
 .client-reports .content-header {
   margin-bottom: 32px;

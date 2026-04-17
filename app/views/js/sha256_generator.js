@@ -1,3 +1,9 @@
+// ============================================
+// This was just for the interim demo purposes
+//==============================================
+
+
+
 // Function to convert an ArrayBuffer to a hexadecimal string
 function bufferToHex(buffer) {
     const hashArray = Array.from(new Uint8Array(buffer));

@@ -630,7 +630,7 @@ function attachFileUploadHandlers() {
         formData.append('file_hash', fileHash);
         formData.append('evidence_summary', evidenceSummary);
         
-        // ADD THESE THREE LINES - Store file info
+        //Store file info
         formData.append('file_size', selectedFile.size);
         formData.append('file_type', selectedFile.type);
         formData.append('file_name', selectedFile.name);

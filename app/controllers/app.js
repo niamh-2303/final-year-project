@@ -1915,7 +1915,6 @@ app.post('/api/invitations/:id/respond', requireRole('investigator', 'client'), 
                 `;
             }
             // For clients, client_access is already true on the case
-            // so no extra insert needed - they just gain dashboard visibility
 
             await createAuditLog(
                 inv.case_id,
