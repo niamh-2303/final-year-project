@@ -1,9 +1,9 @@
-Digital Forensics & Incident Response (DFIR) Case Management System
+# Digital Forensics & Incident Response (DFIR) Case Management System
 Student: Niamh Armour (C22397066)
 
 Project: Final Year Project - A secure web application for forensic case management.
 
-📖 Overview
+# 📖 Overview
 This application is a specialized management tool for forensic investigators. It provides a secure environment to track cases, manage evidence, and maintain a tamper-evident audit trail.
 
 Key Features
@@ -15,7 +15,7 @@ Evidence Integrity: Supports evidence uploads with automatic cryptographic hashi
 
 Case Security: A "Closed Case Guard" prevents any modifications to evidence or logs once a case has been officially closed.
 
-🛠️ Tech Stack
+# 🛠️ Tech Stack
 Backend: Node.js, Express.js
 
 Database: PostgreSQL
@@ -24,7 +24,7 @@ Security: Bcrypt (password hashing), Express-Session (session management), Valid
 
 File Handling: Multer
 
-🚀 Deployment Instructions
+# 🚀 Deployment Instructions
 1. Database Setup
 Ensure PostgreSQL is installed and running on your machine.
 
@@ -37,7 +37,6 @@ Note: You may need to update the credentials in ./db.js (host, user, password) t
 2. Install Dependencies
 Navigate to the root of the project directory and run:
 
-Bash
 npm install
 This will install all required packages: express, cors, bcrypt, express-session, validator, multer, body-parser, and postgres.
 
@@ -46,10 +45,10 @@ To start the web server:
 
 Open your terminal and navigate to the controller subfolder:
 
-Bash
+
 cd app/controller
 Run the application:
 
-Bash
+
 node app.js
 The application will be deployed to: http://localhost:8080
