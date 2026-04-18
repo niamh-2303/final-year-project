@@ -154,7 +154,7 @@ const requireRole = (...allowedRoles) =>{
 //middleware for common roles
 const requireInvestigator = requireRole('investigator');
 const requireClient = requireRole('client');
-const requireAdmin = requireRole('admin');
+const requireAdmin = requireRole('admin'); //for future admin-only routes
 
 // ===== PUBLIC ROUTES (No login required) =====
 app.get('/', (req, res) => {
